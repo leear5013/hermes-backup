@@ -1,0 +1,3 @@
+User: everyday/creative/conversational work (not terminal/coding), AI/LLM enthusiast (Hermes, DeepSeek, opencode, harness benchmarking). Uses 9router proxy (model alias 'oc'). Prefers concise, useful results. Frequently requests Reddit content retrieval + user profiling. SOUL.md is dual-mode (everyday default + terminal engineer mode); wants timestamped backups before SOUL.md edits. Asks about model identity — wants honest "what is knowable" answers.
+§
+Memory consolidated: 3 entries (user profile, model identity preference, deployment notes). Cleared 8 overlapping entries from auto-accumulated session notes.
