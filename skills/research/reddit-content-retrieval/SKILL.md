@@ -36,6 +36,7 @@ An updated Pushshift archive. Returns full post JSON including `selftext`, comme
 
 - Get one post by ID: `GET https://arctic-shift.photon-reddit.com/api/posts/ids?ids=1urrb6u`
 - Search a subreddit (recent first, useful when you only have a permalink): `GET https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=hermesagent&limit=40`
+- **Text search (`q=`) does NOT work** — the parameter is silently ignored by Arctic-Shift. Only `subreddit=` filtering works. If you need to find posts by topic, pull a large batch (`limit=200`) and filter in code by keywords in `title`+`selftext`. Do NOT waste time crafting text queries against Arctic-Shift.
 - The post ID is the base36 snowflake in the permalink path (`/comments/<ID>/`). Strip leading `t3_` if present.
 - Extract fields: `title`, `author`, `selftext` (the body), `created_utc`, `url`.
 
@@ -51,6 +52,14 @@ An updated Pushshift archive. Returns full post JSON including `selftext`, comme
 - Cross-reference `author` on comments for their own posts to find recurring topics/claims.
 - `[removed]`/`[deleted]` entries are skipped silently — don't be confused by gaps.
 
+## Smart Search Script (for text-based discovery)
+
+When you need to SEARCH Reddit by topic (not just fetch by ID), use the smart search script:
+```bash
+python3 ~/.hermes/scripts/reddit_search.py "query" --subreddits Fitness,bodyweightfitness
+```
+See `references/smart-search-script.md` for details. Combines DuckDuckGo discovery + Arctic-Shift data retrieval.
+
 ## Escalation ladder (only if Arctic-Shift misses)
 1. Confirm title/URL via Wayback CDX: `https://web.archive.org/cdx/search/cdx?url=reddit.com/r/<sub>/comments/<id>*&output=json`
 2. Try redlib instances from the live list: `https://raw.githubusercontent.com/redlib-org/redlib-instances/main/instances.json` — but expect bot-checks on nearly all.
@@ -61,6 +70,11 @@ An updated Pushshift archive. Returns full post JSON including `selftext`, comme
 - **Subagent proxy marathon:** when fetching a Reddit URL, do NOT dispatch a subagent to try 15+ redlib mirrors — they are all bot-walled as of 2026-08. Go straight to Arctic-Shift or RSS. The proxy-marathon wastes 8+ minutes and returns nothing useful. This was confirmed empirically (post 1urrb6u, ~15 proxy attempts, 0 successes; Arctic-Shift succeeded on first call).
 - A mirror that "returns something" may be a challenge page, not content. Grep for the actual body keywords (post title, `selftext`, author) before counting it a success.
 - Arctic-Shift is a third-party archive; if it is down, fall back to the ladder above rather than giving up on retrieval immediately.
+- **RSS is now fully blocked (2026-08-05):** Reddit returns "Blocked" in the RSS feed, not intermittent rate-limiting. Do NOT rely on RSS as a primary fallback — it no longer works for anonymous access on most subreddits. Arctic-Shift is now the ONLY reliable route.
+- **Arctic-Shift coverage is uneven** — many subreddits (fitness, loseit, xxfitness, gainit, progresspics) return 0-5 posts even with `limit=200`. Don't assume full coverage of every subreddit. If Arctic-Shift returns empty, the subreddit may simply not be well-archived.
+- **Search engines block bot requests** — DuckDuckGo, Google, and Bing all serve CAPTCHA/bot challenges when scraped via curl. Do NOT waste time trying them for Reddit post discovery.
+- **When ALL routes fail:** be honest with the user. Do NOT invent post content. If the topic is well-covered in training data, you may use that knowledge while clearly stating the source is training data, not fresh Reddit pulls.
+- **Overlapping skill:** `reddit-fetch` is a simpler, older version of this skill. Prefer this one (`reddit-content-retrieval`) for complex tasks — it has RSS extraction recipes, author research, and escalation ladders.
 
 ## Support files
 - `scripts/fetch_reddit_rss.py` — one-shot fetch+extract of a post body via the RSS endpoint (handles retry + double-unescape of embedded code blocks).

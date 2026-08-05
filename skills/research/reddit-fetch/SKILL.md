@@ -3,41 +3,63 @@ name: reddit-fetch
 description: Use when fetching or reading Reddit posts/comments.
 ---
 
-# Fetching Reddit content reliably
+# Reddit Content — Search + Fetch
 
-Reddit blocks anonymous scrapers on its JSON/web endpoints (403 "blocked by network security", Cloudflare "Just a moment", Anubis/Gandalf bot-checks on mirrors). The routes below WORK as of 2026-08; all redlib mirrors and CORS proxies (allorigins/codetabs/Jina) are bot-walled and NOT worth trying.
+Reddit blocks anonymous scrapers on JSON/web endpoints. Use the multi-source approach below.
 
-## Working routes (in order)
+## Smart Search Script
 
-### 1. Arctic-Shift API (fastest, full JSON) — PREFERRED
-Reddit data archive. No auth, reliable, full post body + comments.
+**Always use this first** — combines DuckDuckGo + Arctic-Shift:
+
+```bash
+python3 ~/.hermes/scripts/reddit_search.py "query here" --subreddits Fitness,bodyweightfitness,loseit
+```
+
+- Searches DuckDuckGo for Reddit URLs + pulls from Arctic-Shift subreddits
+- Returns post IDs, titles, scores, URLs
+- No API keys needed
+
+## Fetch Full Post + Comments
+
+```bash
+python3 ~/.hermes/scripts/reddit_search.py --post <post_id>
+```
+
+Returns full post body + top comments sorted by score.
+
+## Direct Arctic-Shift API (for specific known IDs)
 
 ```bash
 # Post by ID
 curl -s "https://arctic-shift.photon-reddit.com/api/posts/ids?ids=1urrb6u"
-# Search by subreddit (recent posts)
-curl -s "https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=hermesagent&limit=40"
 # Comments on a post
-curl -s "https://arctic-shift.photon-reddit.com/api/comments/search?link_id=1urrb6u&limit=5"
+curl -s "https://arctic-shift.photon-reddit.com/api/comments/search?link_id=1urrb6u&limit=50"
+# Subreddit pull (no text search — only returns recent posts)
+curl -s "https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=bodyweightfitness&limit=100"
 ```
 
-Response: `{"data":[...]}`. Post fields: `title`, `author`, `selftext` (full body), `url`, `score`, `created_utc`, `link_flair_text`.
+## What Works / What Doesn't
 
-### 2. Reddit RSS feed (fallback for very fresh posts)
-```bash
-curl -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "https://www.reddit.com/r/hermesagent/comments/1urrb6u/.rss"
-```
-Intermittently rate-limits (empty response) — retry after a few seconds. Content is HTML-escaped inside XML; strip tags/unescape.
+| Method | Status |
+|---|---|
+| Arctic-Shift `/posts/ids` | ✅ Best for fetching by ID |
+| Arctic-Shift `/posts/search` (subreddit only) | ✅ Works, but no text search |
+| Arctic-Shift `/posts/search?q=...` | ❌ Broken — returns empty |
+| Reddit JSON `.json` endpoint | ❌ 403 bot-block |
+| Reddit RSS feeds | ❌ Rate-limited/blocked |
+| DuckDuckGo lite for Reddit URLs | ✅ Works as discovery layer |
+| redlib/libreddit mirrors | ❌ All behind bot challenges |
+| PRAW (official API) | ✅ Needs free API key (reddit.com/prefs/apps) |
 
-### 3. Share links `/s/<code>`
-Resolve the redirect first (`curl -s -o /dev/null -w "%{redirect_url}"`), extract the `/comments/<id>/` segment, then use route 1 or 2 with that ID.
+## Workflow for "Search Reddit about X"
+
+1. Run `reddit_search.py "query"` — gets results from DDG + Arctic-Shift
+2. Pick the most relevant post IDs
+3. Run `reddit_search.py --post <id>` for full content + comments
+4. If Arctic-Shift misses a post, try RSS as last resort
 
 ## Pitfalls
-- **Never** use the JSON endpoint directly (`www.reddit.com/.../comments/<id>.json`) — 403 bot-block.
-- redlib/libreddit/teddit public instances: all behind Anubis/Gandalf/Cloudflare challenges → skip.
-- allorigins (522), codetabs (521), r.jina.ai (Cloudflare), pullpush (rate-limit/paid), Wayback (usually no snapshot) → skip.
-- Comments need `link_id` = the post's base36 ID (from the URL or post `id` field).
-- If Arctic-Shift returns empty for a brand-new post, fall back to RSS, then wait and retry.
-
-## Worked example (2026-08-04)
-r/hermesagent post `1urrb6u` ("This Simple SOUL.md Tweak...") fetched via Arctic-Shift `/api/posts/ids` in one call after ~15 failed proxy attempts. Subagent independently confirmed via RSS route. Don't repeat the proxy marathon — go straight to Arctic-Shift.
+- Arctic-Shift text search (`q=` parameter) is broken — don't use it
+- Reddit JSON/RSS endpoints are blocked from this server
+- DuckDuckGo lite sometimes shows bot challenges — retry after a few seconds
+- For very fresh posts (< 1 week), Arctic-Shift may not have them yet

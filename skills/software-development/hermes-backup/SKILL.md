@@ -33,29 +33,30 @@ Back up the full Hermes state — persona, skills, memories, chat history, confi
 
 When backing up `state.db` (chat history), **GitHub's push protection detects embedded secrets** — API keys, tokens, or PATs that appear in conversation transcripts. The push will be rejected with `GH013: Repository rule violations found`.
 
-**Solution:** Auto-redact all secrets from `state.db` before committing. The backup script reads `.env` and `auth.json` to build a list of known secret values, then replaces them with `***REDACTED***` in the binary SQLite file before `git add`.
+**Two-layer redaction is required:**
+
+**Layer 1 — Known secrets from config files:** Read `.env` and `auth.json` to build a set of known secret values (API keys, base URLs, fingerprints). Replace each in `state.db`.
+
+**Layer 2 — Pattern scanning for user-pasted tokens:** Users often paste GitHub PATs, API keys, or other tokens directly into chat. These are NOT in `.env` or `auth.json` — they only exist in the chat history. Scan `state.db` for common token patterns and redact them:
 
 ```python
-# Pattern for auto-redaction in state.db
-import json, os
+import re, json, os
 secrets = set()
-# From .env
-for line in open(os.path.expanduser("~/.hermes/.env")):
-    if "=" in line:
-        val = line.split("=",1)[1].strip().strip("\"'")
-        if len(val) > 10: secrets.add(val.encode())
-# From auth.json
-data = json.load(open(os.path.expanduser("~/.hermes/auth.json")))
-for pool in data.get("credential_pool",{}).values():
-    for c in pool:
-        for k in ("base_url","label","secret_fingerprint","id"):
-            v = str(c.get(k,""))
-            if len(v) > 8: secrets.add(v.encode())
-# Redact
+# Layer 1: from .env and auth.json (same as before)
+# ...
+# Layer 2: scan state.db for token PATTERNS
 db = open("state.db","rb").read()
-for s in secrets: db = db.replace(s, b"***REDACTED***")
+gh_tokens = re.findall(rb'gh[pso]_[A-Za-z0-9]{20,}', db)  # GitHub PATs
+sk_tokens = re.findall(rb'sk-[A-Za-z0-9]{20,}', db)        # OpenAI-style keys
+for t in gh_tokens + sk_tokens:
+    secrets.add(t)
+# Apply all redactions
+for s in secrets:
+    db = db.replace(s, b"***REDACTED***")
 open("state.db","wb").write(db)
 ```
+
+**Without Layer 2, the push WILL fail** — we hit this 3 times before discovering that the chat history contained 14 GitHub PATs and 16 sk-* tokens that weren't in any config file. The error is `GH013` with locations pointing to byte offsets in `state.db`.
 
 ## Backup script pattern
 See `scripts/backup-to-github.sh` for the full working script. Key structure:
@@ -76,7 +77,7 @@ cp -r <repo>/* ~/.hermes/
 The new bot gets: same SOUL.md, same skills, same memories, same chat history. Only `.env` needs manual setup (private keys can't be in the repo).
 
 ## Pitfalls
-- **GitHub token in chat history:** If the user pastes a PAT into chat during a session, it gets stored in state.db. The auto-redactor catches this, but if the secret is unusual (not in .env/auth.json), it may slip through. Check push protection errors for `GH013` and add any missing secrets to the redaction list.
+- **GitHub token in chat history:** If the user pastes a PAT into chat during a session, it gets stored in state.db. Layer 1 redaction (from .env/auth.json) does NOT catch these — you MUST also scan for token patterns (ghp_*, sk-*) directly in state.db (Layer 2). Without this, expect `GH013` push rejections with byte-offset locations pointing into state.db.
 - **state.db grows over time:** The SQLite file includes all session messages. For very long-lived bots, consider periodic `VACUUM` or archiving old sessions.
 - **git identity required:** Set `git config --global user.email` and `user.name` before first push, or commits will fail with "Author identity unknown."
 - **The backup script embeds the PAT in the repo URL.** This is in the script file itself (not in the backed-up data). The PAT in the script should be rotated if compromised. The script auto-redacts secrets from state.db but not from its own URL — that's intentional for automation, but be aware.
