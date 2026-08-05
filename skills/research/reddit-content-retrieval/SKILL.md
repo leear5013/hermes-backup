@@ -58,6 +58,7 @@ An updated Pushshift archive. Returns full post JSON including `selftext`, comme
 
 ## Pitfalls
 - Reddit returns `text/html` bot-check with HTTP 200 sometimes, 403 other times — always inspect the raw body before assuming success (`read().decode(errors="replace")`); never blind `json.loads` a Reddit response.
+- **Subagent proxy marathon:** when fetching a Reddit URL, do NOT dispatch a subagent to try 15+ redlib mirrors — they are all bot-walled as of 2026-08. Go straight to Arctic-Shift or RSS. The proxy-marathon wastes 8+ minutes and returns nothing useful. This was confirmed empirically (post 1urrb6u, ~15 proxy attempts, 0 successes; Arctic-Shift succeeded on first call).
 - A mirror that "returns something" may be a challenge page, not content. Grep for the actual body keywords (post title, `selftext`, author) before counting it a success.
 - Arctic-Shift is a third-party archive; if it is down, fall back to the ladder above rather than giving up on retrieval immediately.
 

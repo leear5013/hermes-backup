@@ -7,7 +7,13 @@ description: Use when asked which model a Hermes session uses.
 
 Users frequently ask "which model am I talking to?" — and the configured model id is often a **router alias** (e.g. `oc`, `gpt-5.3`) that does not reveal the underlying weights/provider. This skill is the diagnostic path to resolve it.
 
-## Steps
+## When to use
+- User asks "which model am I talking to?" → follow steps 1-7 below
+- User shares a new API key and asks "what can I use?" or "test my models" → see **API model testing** section below
+
+When the user shares a new API key and asks "what can I use?" or "test my models" — see `references/api-model-testing.md` for the full enumeration + free-tier discovery workflow. Quick version: `GET {base}/models` to list all IDs, then test each with a minimal "OK" prompt via `POST /chat/completions`, classifying responses as free ✅ / paid ❌ / param-adjust ⚠️.
+
+## Model identity resolution steps
 
 1. **Session metadata first.** The session header usually names the model + provider (e.g. `Model: oc`, `Provider: openai-api`). Treat the model id as an alias until proven otherwise.
 2. **Check global config** `~/.hermes/config.yaml` — frequently it does NOT pin a model (it may only hold terminal/compression/onboarding keys). An empty result is normal, not a dead end; model selection lives at session/gateway level.
@@ -29,3 +35,4 @@ Users frequently ask "which model am I talking to?" — and the configured model
 ## Support files
 
 - `references/9router-oc-case.md` — worked example: alias `oc` on a Railway-hosted router (file inventory, probe code, malformed-JSON quirk).
+- `references/api-model-testing.md` — enumerate all models on a provider and discover free vs paid tier. Use when the user shares a new API key and asks "what can I use?"
