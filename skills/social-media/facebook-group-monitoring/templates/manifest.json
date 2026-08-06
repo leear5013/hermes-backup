@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "رصد RASD — عينك في كل جروب",
+  "version": "1.0.0",
+  "description": "يراقب جروبات فيسبوك ويبعثلك تنبيه فوري على تيليجرام لما تلاقي طلب خدمة — تثبيت مرة واحدة وخلاص",
+  "permissions": ["storage", "alarms"],
+  "host_permissions": [
+    "https://*.facebook.com/*",
+    "https://api.telegram.org/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://*.facebook.com/groups/*", "https://*.facebook.com/*/groups/*"],
+      "js": ["matcher.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "رصد RASD"
+  }
+}

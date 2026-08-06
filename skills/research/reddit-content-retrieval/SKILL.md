@@ -72,7 +72,9 @@ See `references/smart-search-script.md` for details. Combines DuckDuckGo discove
 - Arctic-Shift is a third-party archive; if it is down, fall back to the ladder above rather than giving up on retrieval immediately.
 - **RSS is now fully blocked (2026-08-05):** Reddit returns "Blocked" in the RSS feed, not intermittent rate-limiting. Do NOT rely on RSS as a primary fallback — it no longer works for anonymous access on most subreddits. Arctic-Shift is now the ONLY reliable route.
 - **Arctic-Shift coverage is uneven** — many subreddits (fitness, loseit, xxfitness, gainit, progresspics) return 0-5 posts even with `limit=200`. Don't assume full coverage of every subreddit. If Arctic-Shift returns empty, the subreddit may simply not be well-archived.
-- **Search engines block bot requests** — DuckDuckGo, Google, and Bing all serve CAPTCHA/bot challenges when scraped via curl. Do NOT waste time trying them for Reddit post discovery.
+- **Search engines block bot requests** — DuckDuckGo, Google, and Bing all serve CAPTCHA/bot challenges when scraped via curl from datacenter IPs. Do NOT waste time trying them for Reddit post discovery from VPS/cloud servers.
+- **Arctic-Shift comment structure:** The `/api/comments/tree` endpoint returns comments nested as `data[].data` (kind/data wrapper), not flat. Must unwrap: `for item in response["data"]: c = item["data"]; print(c["body"])`. Accessing `item["body"]` directly gives empty strings.
+- **Reddit short links** (`/s/SHORTID`) can be resolved via `curl -sL -o /dev/null -w "%{redirect_url}" <url>` to get the actual post ID.
 - **When ALL routes fail:** be honest with the user. Do NOT invent post content. If the topic is well-covered in training data, you may use that knowledge while clearly stating the source is training data, not fresh Reddit pulls.
 - **Overlapping skill:** `reddit-fetch` is a simpler, older version of this skill. Prefer this one (`reddit-content-retrieval`) for complex tasks — it has RSS extraction recipes, author research, and escalation ladders.
 

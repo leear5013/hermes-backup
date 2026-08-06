@@ -13,6 +13,11 @@ LinkedIn blocks ALL anonymous access (auth wall, Cloudflare, bot detection). Eve
 
 ### Option 1: LinkedIn MCP Server (BEST for AI agents) ⭐3019
 ```
+# Install prerequisites (one-time):
+pip install uv        # uvx runner (curl installer may hang on some hosts — pip works)
+pip install mcp       # Hermes' MCP client SDK (without it, MCP discovery is silently disabled)
+uv tool install mcp-server-linkedin   # pre-download; PATH note: binary lands in /data/.local/bin
+
 # Add to ~/.hermes/config.yaml under mcp_servers:
 linkedin:
   command: "uvx"
@@ -21,6 +26,8 @@ linkedin:
   env:
     UV_HTTP_TIMEOUT: "300"
 ```
+- Restart Hermes gateway after config change (no hot-reload for MCP servers)
+- First tool call opens a real browser window for one-time login — needs a display or the user's machine
 - `stickerdaniel/linkedin-mcp-server` — dedicated MCP server for LinkedIn
 - Uses **Patchright** (stealth Chromium) — opens real browser for one-time login, then automates
 - Tools: `get_person_profile`, `search_people`, `search_jobs`, `get_company_profile`, `search_posts`, `get_feed`, `send_message`, `connect_with_person`
@@ -101,11 +108,41 @@ curl -s "https://arctic-shift.photon-reddit.com/api/comments/search?link_id=<pos
 - DuckDuckGo lite — bot challenge
 - Google cache — CAPTCHA
 
+## Facebook Access
+
+Facebook share links (`facebook.com/share/<id>/`) work with ONE specific URL variant. See `references/facebook-share-link.md` for the share-link recipe.
+
+**For FULL post text + comments (the common ask): use the Googlebot UA trick.** See `references/facebook-full-post-comments.md` for the complete recipe. Summary:
+
+1. Share link → fetch `https://www.facebook.com/share/p/<id>/` (mobile UA) → read `og:url` for the original post URL
+2. Fetch the ORIGINAL post URL (`facebook.com/<author>/posts/<id>/`) with UA `Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)` → ~1MB page with **full post + all visible comments + authors + reaction/share counts, no login wall**
+3. Extract: strip scripts/styles/tags for ordered reading; or regex `"body":\s*\{"text":\s*"..."` for clean comment JSON (decode with `json.loads('"'+s+'"')`, drop surrogates — NOT `.decode('unicode_escape')`)
+
+**Fallback: embed plugin** — `facebook.com/plugins/post.php?href=<urlencoded>&show_text=true&width=500` rendered via Chromium headless gives the FULL post text (not truncated like og:description) but NO comments.
+
+**Post-text-only trick:** the `/share/p/` variant's `og:description` meta tag carries the first ~50-60 words as **hex HTML entities** (`&#x641;&#x63a;...`). Decode with:
+
+```python
+import re
+decoded = re.sub(r'&#x([0-9a-fA-F]+);', lambda m: chr(int(m.group(1), 16)), raw_desc)
+```
+
+Also extract `og:title` (author name), `og:url` (original post URL — contains the percent-encoded full title), `og:type` (`video.other` = video post), `og:image` (media).
+
+**What fails (don't waste time):**
+- `facebook.com/share/<id>/` without `/p/` → 1.5KB "Sorry, something went wrong" error page
+- `mbasic.facebook.com` → login wall
+- `m.facebook.com` → title only, no body
+- Original post page with a normal UA → title only (~50 words max public preview) — the Googlebot UA is what unlocks it
+
 ## Pitfalls
 - Arctic-Shift `q` parameter is broken — always returns 0. Never use for text search.
+- DuckDuckGo HTML search returns bot challenges from datacenter/VPS IPs — unreliable for automated Reddit discovery from servers. Use from residential IPs only, or fall back to Arctic-Shift subreddit pulls.
+- Arctic-Shift `/api/comments/tree` returns comments nested as `data[].data` (kind/data wrapper), not flat — must unwrap before accessing author/body/score fields. Example: `for item in response["data"]: c = item["data"]; print(c["body"])`.
+- Reddit `/s/` short links can be resolved via `curl -sL -o /dev/null -w "%{redirect_url}" <url>` to get the actual post ID.
 - Arctic-Shift subreddit coverage varies wildly — popular subreddits (Fitness, loseit) may return 0 posts.
 - LinkedIn requires authentication for ANY data access. The MCP server approach (Patchright browser) is the safest for AI agents — it uses your real browser session.
-- DuckDuckGo and Google both block server-side scraping with CAPTCHAs — even Chromium headless can't bypass Google's CAPTCHA from a server IP.
+- Google both block server-side scraping with CAPTCHAs — even Chromium headless can't bypass Google's CAPTCHA from a server IP.
 - YARS (`pip install yars`) is Python 2 code and won't install on Python 3. Use the smart search script or PRAW instead.
 - `reddit-fetch` and `reddit-content-retrieval` overlap — prefer `reddit-content-retrieval` for complex tasks (has RSS extraction, author profiling, escalation ladders). The smart search script in `reddit-search.py` is the best entry point for both.
 - When a scraping tool fails, check if an MCP server or CLI tool exists before trying raw HTTP.

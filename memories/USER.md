@@ -1,1 +1,7 @@
-Telegram (first-time 2026-08). Non-developer, non-coding work. Warm conversational tone. Wants zero-config bot cloning from GitHub repo. Values visual polish (cares about emoji rendering in images). Curious about model identity (what's knowable vs opaque). Dual-mode SOUL.md: everyday + terminal-engineer. Active Reddit AI/LLM researcher — expects fast Arctic-Shift, no proxy loops. Has b.ai API (testing free tiers). Runs 9router proxy. Interested in Reddit author profiling. Timestamped backups before SOUL.md edits. Has Arabic-speaking contacts — translates for them. Interested in bodyweight fitness (no equipment, fat loss + muscle gain). Designing Verixa brand (green checkmark + fingerprint + abstract symbol).
+Egyptian — writes in Egyptian Arabic; translates for Arabic-speaking contacts. **RULE: match the user's language per-message** — Arabic ↔ Arabic, English ↔ English. Never default to the wrong one.
+§
+Building 'RASD' — FB-groups lead-alert product (Arab market). Client-side Chrome extension (user's own browser/account). ZERO customer friction is hard rule. Android-first (Kiwi Browser). Moat = Arabic dialect matching. Repo: github.com/leear5013/rasd
+§
+Wants ZERO friction products — one-click install max.
+§
+User runs Hermes Agent on Railway (500MB storage limit — a pain point they want to solve). Prefers English when writing in English; match their language. Called out verbose/trashy responses — wants concise, no-fluff answers. Values REAL research backed by actual community data (Reddit posts, GitHub issues, docs) over AI-generated knowledge. Shared a multi-source Reddit research methodology (DDG discovery → Arctic-Shift fetch → upvote-weighted clustering → consensus report).
