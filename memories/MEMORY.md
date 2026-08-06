@@ -7,3 +7,5 @@ Facebook blocks datacenter/VPS IPs entirely (www→HTTP 400, mbasic→title 'Err
 GitHub PAT (leear5013, ghp_ 40-char) embedded in ~/.hermes/scripts/backup-to-github.sh REPO_URL — extract via sed, never print. User product repos: leear5013/rasd (RASD watcher, public, codeload zip for phone downloads), leear5013/hermes-backup.
 §
 9router proxy base = https://omniroute-production-9fa0.up.railway.app/v1 (provider 'openai-api', model 'hermes', alias oc/*). 'hermes' is a FUSION-model name (opencode free models), not a provider prefix — free routes 403 insufficient_quota when out. MiMo (Xiaomi) models in proxy catalog but need xiaomi-mimo provider key or 9router top-up; official API platform.xiaomimimo.com has free token plan.
+§
+OmniRoute = open-source gateway diegosouzapw/OmniRoute; cookie-auth providers paste session cookie as API key (huggingchat uses hf-chat cookie); user's Railway 9router catalog (691 models) lacks huggingchat — probe /v1/models before assuming.

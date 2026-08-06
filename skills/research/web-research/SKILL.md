@@ -137,7 +137,7 @@ Also extract `og:title` (author name), `og:url` (original post URL — contains 
 
 ## Pitfalls
 - Arctic-Shift `q` parameter is broken — always returns 0. Never use for text search.
-- DuckDuckGo HTML search returns bot challenges from datacenter/VPS IPs — unreliable for automated Reddit discovery from servers. Use from residential IPs only, or fall back to Arctic-Shift subreddit pulls.
+- DuckDuckGo `lite.duckduckgo.com` returns bot challenges from datacenter/VPS IPs — don't use it. `html.duckduckgo.com` works from datacenter IPs and is the correct endpoint for server-side Reddit discovery.
 - Arctic-Shift `/api/comments/tree` returns comments nested as `data[].data` (kind/data wrapper), not flat — must unwrap before accessing author/body/score fields. Example: `for item in response["data"]: c = item["data"]; print(c["body"])`.
 - Reddit `/s/` short links can be resolved via `curl -sL -o /dev/null -w "%{redirect_url}" <url>` to get the actual post ID.
 - Arctic-Shift subreddit coverage varies wildly — popular subreddits (Fitness, loseit) may return 0 posts.
