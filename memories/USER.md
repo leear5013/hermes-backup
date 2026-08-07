@@ -1,9 +1,9 @@
-Egyptian — writes in Egyptian Arabic; translates for Arabic-speaking contacts. **RULE: match the user's language per-message** — Arabic ↔ Arabic, English ↔ English. Never default to the wrong one.
+Egyptian — Arabic↔Arabic, English↔English. Full name: Hesham Hatem. Data Engineer, Menoufia Univ, graduating June 2026, GPA 3.4. GitHub: Hesham942. Stack: PySpark, Kafka, Flink, Airflow, Docker, AWS.
 §
-Building 'RASD' — FB-groups lead-alert product (Arab market). Client-side Chrome extension (user's own browser/account). ZERO customer friction is hard rule. Android-first (Kiwi Browser). Moat = Arabic dialect matching. Repo: github.com/leear5013/rasd
+Building RASD (Arabic FB-group lead alert, repo: leear5013/rasd). ZERO friction, Android-first. Called out verbose responses — wants concise, no-fluff. Prefers REAL research (Reddit, GitHub, docs) over AI knowledge.
 §
 Wants ZERO friction products — one-click install max.
 §
 User runs Hermes Agent on Railway (500MB storage limit — a pain point they want to solve). Prefers English when writing in English; match their language. Called out verbose/trashy responses — wants concise, no-fluff answers. Values REAL research backed by actual community data (Reddit posts, GitHub issues, docs) over AI-generated knowledge. Shared a multi-source Reddit research methodology (DDG discovery → Arctic-Shift fetch → upvote-weighted clustering → consensus report).
 §
-Has a Bybit virtual card with $0 balance — cannot pay for cloud hosting (Oracle Cloud requires €0.93 verification charge). Wants cloud hosting specifically (not laptop). Primary pain point is hosting/storage for Hermes (500MB Railway limit is too small). Prefers summaries of long content — too lazy to read articles, asks me to summarize for them.
+Has HuggingFace account (for OmniRoute/cookie auth). Prefers summaries of long content. Has a CV — asked for review; needs stronger impact framing on project bullets.
