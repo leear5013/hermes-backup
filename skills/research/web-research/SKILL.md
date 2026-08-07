@@ -135,6 +135,35 @@ Also extract `og:title` (author name), `og:url` (original post URL — contains 
 - `m.facebook.com` → title only, no body
 - Original post page with a normal UA → title only (~50 words max public preview) — the Googlebot UA is what unlocks it
 
+## Jina Reader for Non-Reddit Sites (review sites, pricing pages, blogs)
+
+Jina Reader (`r.jina.ai`) successfully fetches content from sites behind Cloudflare when direct curl fails. Prefix any URL with `https://r.jina.ai/` and fetch with `Accept: text/plain`:
+
+```bash
+curl -sL -m 20 -H "Accept: text/plain" "https://r.jina.ai/https://www.trustpilot.com/review/housecallpro.com"
+```
+
+**What works via Jina Reader:**
+- Trustpilot reviews (goldmine for SaaS complaints — real users, dates, specific issues)
+- Official pricing pages (Housecall Pro, Jobber, Procore, BuilderTrend)
+- Blog posts and comparison articles
+- Wikipedia
+
+**What doesn't work via Jina Reader:**
+- Reddit (403 — Reddit blocks Jina's fetchers, as noted in pitfalls)
+- Sites that require JavaScript rendering beyond initial HTML (some SaaS apps)
+- G2, Capterra, Software Advice (Cloudflare challenge pages)
+
+**Workflow for SaaS/product complaint research:**
+1. Fetch Trustpilot reviews via Jina: `r.jina.ai/https://www.trustpilot.com/review/<company>.com`
+2. Fetch official pricing pages via Jina: `r.jina.ai/https://<company>.com/pricing`
+3. Search Reddit via `reddit_search.py` for additional context
+4. Extract complaint themes, pricing tiers, and alternatives from all sources
+
+**Tip:** For structured output from Jina-fetched pages, strip HTML with `re.sub(r'<[^>]+>', ' ', text)` then `re.sub(r'\s+', ' ', text).` Search for keywords like `$`, `per month`, `complaint`, `frustrat`, `downside` to find relevant sections.
+
+**Reference:** See `references/contractor-software-landscape.md` for a condensed knowledge bank of contractor/plumbing/electrical software complaints, pricing, and alternatives (researched 2026-08).
+
 ## Pitfalls
 - Arctic-Shift `q` parameter is broken — always returns 0. Never use for text search.
 - DuckDuckGo `lite.duckduckgo.com` returns bot challenges from datacenter/VPS IPs — don't use it. `html.duckduckgo.com` works from datacenter IPs and is the correct endpoint for server-side Reddit discovery.

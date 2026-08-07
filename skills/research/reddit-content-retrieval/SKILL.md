@@ -77,8 +77,10 @@ See `references/smart-search-script.md` for details. Combines DuckDuckGo discove
 - **Reddit short links** (`/s/SHORTID`) can be resolved via `curl -sL -o /dev/null -w "%{redirect_url}" <url>` to get the actual post ID.
 - **When ALL routes fail:** be honest with the user. Do NOT invent post content. If the topic is well-covered in training data, you may use that knowledge while clearly stating the source is training data, not fresh Reddit pulls.
 - **Overlapping skill:** `reddit-fetch` is a simpler, older version of this skill. Prefer this one (`reddit-content-retrieval`) for complex tasks — it has RSS extraction recipes, author research, and escalation ladders.
+- **old.reddit.com HTML scraping (alternative):** Direct HTML scraping of `old.reddit.com` search pages and thread pages with Python regex can work (tested 2026-08). This contradicts the "Reddit web / old.reddit | ❌ 403 block" note in `reddit-fetch`. See `references/html-scraping-alternative.md` for the technique. Use as fallback when Arctic-Shift lacks coverage. Key: use search pages first to find thread URLs, then fetch individual thread HTML and parse `class="md"` content.
 
 ## Support files
 - `scripts/fetch_reddit_rss.py` — one-shot fetch+extract of a post body via the RSS endpoint (handles retry + double-unescape of embedded code blocks).
 - `references/arctic-shift-worked-example.md` — full worked example: failure chain table for post 1urrb6u, exact Arctic-Shift probe code, lesson learned.
 - `references/redditor-profiling.md` — author-research worked example (u/NinjaAlaska): endpoint calls, analysis pattern, gotchas, output shape.
+- `references/html-scraping-alternative.md` — alternative technique: direct old.reddit.com HTML scraping with Python regex (tested 2026-08). Use when Arctic-Shift lacks coverage or you need search-based discovery first.

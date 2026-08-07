@@ -4,6 +4,6 @@ Reddit fetching (verified 2026-08): Arctic-Shift `/posts/ids?ids=X` ✅, `/posts
 §
 Facebook blocks datacenter/VPS IPs entirely (www→HTTP 400, mbasic→title 'Error', even public login page). Cookie fetching works only from residential IP/browser → FB group monitoring must be client-side (customer's browser). RASD v1 (Arabic FB group lead watcher) at /data/workspace/rasd/ (Python + Chrome-extension versions).
 §
-[`learn] command works — user tested it twice (created + deleted Spanish skill). User interested in creative skills (architecture diagrams, design). Has architecture-diagram skill for generating SVG diagrams from project descriptions.
-§
 9router proxy base = https://omniroute-production-9fa0.up.railway.app/v1 (provider 'openai-api', model 'hermes', alias oc/*). 'hermes' = FUSION-model name (opencode free models), not provider prefix; free routes 403 insufficient_quota when out. OmniRoute gateway (diegosouzapw/OmniRoute): cookie-auth providers paste session cookie as API key — huggingchat needs full Cookie header (hf-chat + token + aws-waf-token); HF free tier = monthly credits, '402 depleted' → fresh HF account resets. User pastes live cookies into chat during setup — remind rotation after verify, never store/echo. Probe /v1/models before assuming provider exists.
+§
+CV: Hesham Hatem, Data Engineer, Menoufia Univ (June 2026, GPA 3.4, rank 7). GitHub: Hesham942. Stack: PySpark, Kafka, Flink, Airflow, Docker, AWS. Micro-SaaS side income research (boring industries). Tested [learn] (Spanish skill). Likes creative skills.
