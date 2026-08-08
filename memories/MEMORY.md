@@ -6,6 +6,6 @@ Facebook blocks datacenter/VPS IPs entirely (www→HTTP 400, mbasic→title 'Err
 §
 9router proxy base = https://omniroute-production-9fa0.up.railway.app/v1 (provider 'openai-api', model 'hermes', alias oc/*). 'hermes' = FUSION-model name (opencode free routes), 403 insufficient_quota when out. OmniRoute (diegosouzapw/OmniRoute): cookie-auth providers paste session cookie as API key — huggingchat needs full Cookie header; HF free tier monthly credits, '402 depleted' → fresh account resets. Remind rotation after verify, never store/echo cookies. Probe /v1/models first.
 §
-CV: Hesham Hatem, Data Engineer, Menoufia Univ (June 2026, GPA 3.4, rank 7). GitHub: Hesham942. Stack: PySpark, Kafka, Flink, Airflow, Docker, AWS. Micro-SaaS side income research (boring industries). Tested [learn] (Spanish skill). Likes creative skills.
+CV: Hesham Hatem, Data Engineer, Menoufia Univ (June 2026, GPA 3.4, rank 7). GitHub: Hesham942. Stack: PySpark, Kafka, Flink, Airflow, Docker, AWS. Micro-SaaS side income research (boring industries). Likes creative skills.
 §
-Hermes auto-backup infra: repo leear5013/hermes-backup, every 12h via no_agent cron script /data/.hermes/scripts/backup-to-github.sh (PAT embedded in REPO_URL — rotate if leaked; .env/auth.json excluded). Restore/merge workflow: skill hermes-backup-restore.
+Hermes auto-backup: repo leear5013/hermes-backup, 12h no_agent cron, script /data/.hermes/scripts/backup-to-github.sh (TOKENLESS — auth via ~/.git-credentials x-access-token; security layer redacts/blocks token-embedded scripts). state.db redacted 2-layer (env/auth values + ghp_*/sk-* patterns) before push. Restore/merge: hermes-backup-restore skill.
