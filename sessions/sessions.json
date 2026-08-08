@@ -4,7 +4,7 @@
     "session_key": "agent:main:telegram:dm:874305381",
     "session_id": "20260808_123526_2386e6a2",
     "created_at": "2026-08-08T12:35:26.802609",
-    "updated_at": "2026-08-08T12:42:32.071389",
+    "updated_at": "2026-08-08T22:37:14.317931",
     "display_name": "hesham hatem",
     "platform": "telegram",
     "chat_type": "dm",
@@ -14,7 +14,7 @@
     "cache_read_tokens": 0,
     "cache_write_tokens": 0,
     "total_tokens": 0,
-    "last_prompt_tokens": 0,
+    "last_prompt_tokens": 70752,
     "estimated_cost_usd": 0.0,
     "cost_status": "unknown",
     "expiry_finalized": false,
@@ -30,9 +30,9 @@
     "reset_had_activity": false,
     "prev_session_id": null,
     "model_override": {
-      "model": "hermesss",
+      "model": "deepseek",
       "provider": "openai-api",
-      "base_url": "https://9router-production-64ac.up.railway.app/v1"
+      "base_url": "https://omniroute-production-9fa0.up.railway.app/v1"
     },
     "origin": {
       "platform": "telegram",
