@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Zero-dependency Telegram config-decrypt bot (stdlib only).
+"""Zero-dependency Telegram config-decrypt bot (stdlib only + pycryptodome for nm-vmess).
 
 Drop the 5 decryptor modules (NPVTUNNEL.py, HTTPCUSTOM.py, HTTPINJECTOR.py,
 DARKTUNNEL.py, SSCCUSTOM.py from github.com/zhgddm/npv-) into ./decryptors,
@@ -13,10 +13,10 @@ Paste a share link (vmess:// vless:// trojan:// ss:// nm-vmess://) and it
 decodes it inline. Only /start is special-cased; everything else text goes
 through decode_share_link.
 
-v4 (2026-08-08): all decodes are wrapped in ```json / ``` code fences so they
-render as clean blocks on Telegram (user preference). Encrypted nm-vmess
-payloads are detected (AES-block fingerprint) and reported honestly instead of
-crashing with a UnicodeDecodeError. See ../references/nm-vmess-format.md.
+v5 (2026-08-09): nm-vmess:// now DECRYPTS REAL NetMod 4.2.0 configs — AES-128-ECB
++ PKCS7, 3-key try-loop (key0 <n3t5yn4^n3tm0d> first, then _netsyna_netmod_,
+nicetrybuddygoon), scheme cracked from libgojni.so disassembly and verified on a
+real 272-byte payload. vmess:// plain base64-JSON path unchanged.
 """
 import base64
 import importlib.util
@@ -28,6 +28,11 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+
+try:
+    from Crypto.Cipher import AES
+except ImportError:
+    AES = None
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("decryptbot")
@@ -47,6 +52,15 @@ DECRYPTOR_MAP = {
     ".ssc":  ("SSCCUSTOM.py", "SSC Custom"),
     ".txt":  None,  # sniff content
 }
+
+# NetMod 4.2.0 nm-vmess keys — cracked from libgojni.so rodata (security.init.0),
+# verified end-to-end on a real payload 2026-08-09. key0 is the current one;
+# keys 1-2 are legacy fallbacks (old devkaj key is still there).
+NM_VMESS_KEYS = [
+    b"<n3t5yn4^n3tm0d>",
+    b"_netsyna_netmod_",
+    b"nicetrybuddygoon",
+]
 
 _loaded = {}
 
@@ -100,6 +114,32 @@ def _fence(text):
     return "```\n" + text + "\n```"
 
 
+def _pkcs7_valid(blob):
+    if not blob:
+        return False
+    pad = blob[-1]
+    return 1 <= pad <= 16 and blob[-pad:] == bytes([pad]) * pad
+
+
+def decrypt_nm_vmess(payload_b64):
+    """Real NetMod nm-vmess decryptor: base64 → AES-128-ECB try-loop over the 3 keys → JSON.
+
+    Mirrors libgojni.so security.Decrypt: base64-decode first, then try each key on
+    the WHOLE blob until pkcs7-unpad succeeds. Returns (json_obj, key_used) or raises.
+    """
+    if AES is None:
+        raise RuntimeError("pycryptodome not installed")
+    blob = base64.b64decode(payload_b64 + "=" * (-len(payload_b64) % 4))
+    if len(blob) % 16 != 0:
+        raise ValueError(f"ciphertext not block-aligned: {len(blob)} bytes (mod16={len(blob) % 16})")
+    for key in NM_VMESS_KEYS:
+        dec = AES.new(key, AES.MODE_ECB).decrypt(blob)
+        if _pkcs7_valid(dec):
+            plain = dec[:-dec[-1]]
+            return json.loads(plain), key
+    raise ValueError("no key matched (not a NetMod-4.2.0 nm-vmess config?)")
+
+
 def decode_share_link(text):
     """Decode vmess:// (base64 JSON), nm-vmess://, ss://, vless://, trojan:// found in text."""
     out = []
@@ -109,15 +149,17 @@ def decode_share_link(text):
         scheme, payload = m.group(0).split('://', 1)
         payload = payload.strip().strip('`').strip(')').strip('>')
         try:
-            raw = base64.b64decode(payload + "=" * (-len(payload) % 4))
-            if scheme in ("vmess", "nm-vmess"):
+            if scheme == "nm-vmess":
+                obj, key = decrypt_nm_vmess(payload)
+                out.append(f"🔓 nm-vmess:// decrypted (NetMod 4.2.0, AES-128-ECB "
+                           f"key `{key.decode()}`):\n" + _json_block(obj))
+            elif scheme == "vmess":
+                raw = base64.b64decode(payload + "=" * (-len(payload) % 4))
                 if raw[:1] in (b"{", b"\xef"):  # '{' or UTF-8 BOM → plain JSON path
                     out.append(f"🔓 {scheme}:// decoded:\n" + _json_block(json.loads(raw)))
                 else:
-                    # AES-encrypted nm-vmess (272 B = 17×16 blocks fingerprint) — honest report
-                    out.append(f"🔒 {scheme}:// is ENCRYPTED (not base64 JSON): {len(raw)} bytes, "
-                               f"first byte 0x{raw[0]:02x}, mod16={len(raw) % 16}.\n"
-                               "Key/schema not cracked yet — needs NetMod APK analysis.")
+                    out.append(f"❌ {scheme}:// is not base64 JSON ({len(raw)} bytes, "
+                               f"first byte 0x{raw[0]:02x})")
             elif scheme == "ss":
                 # ss://base64(method:password)@host:port#name
                 name = ""
@@ -259,7 +301,8 @@ def main():
                                  "`.ehi` (HTTP Injector)\n"
                                  "`.dt` (Dark Tunnel) `.ssc` (SSC Custom)\n\n"
                                  "Or paste a `vmess://` `vless://` `trojan://` `ss://` "
-                                 "`nm-vmess://` code and I'll decode it.\n\n"
+                                 "`nm-vmess://` code and I'll decode it — nm-vmess now "
+                                 "supports real NetMod 4.2.0 encryption (AES-128-ECB).\n\n"
                                  "Raw output, nothing redacted. 🔓")
                     else:
                         handle_text(chat_id, msg["text"])

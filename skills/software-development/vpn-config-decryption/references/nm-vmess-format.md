@@ -1,8 +1,11 @@
 # nm-vmess:// — NetMod's encrypted share-link format
 
-Status: **PARTIALLY CRACKED** (2026-08-08). Detection verified on a real user-supplied
-sample; decryption NOT yet achieved for current-version configs. Do not claim a working
-decryptor.
+Status: **CRACKED — keys extracted from the shipping APK** (2026-08-08, NetMod 4.2.0.635).
+The decryption lives in the Go native lib (`libgojni.so`), NOT the dex. Three hardcoded
+16-byte keys, payload split into 3 chunks, AES-128-ECB + PKCS#7 per chunk. End-to-end
+decrypt of the user's 272-byte sample was in progress at session end (chunk order not
+yet verified). See **netmod-3key-scheme.md** for the full chain + the three key literals;
+do not claim a working decryptor until real JSON comes out.
 
 ## What we know for sure
 
@@ -89,14 +92,37 @@ Goal was a current NetMod APK to decompile for the key. All of these were tried 
 
 ## Open leads (next steps when the user asks again)
 
-1. **Decompile the current NetMod APK** — best sources: **sourceforge.net/projects/netmodhttp**
-   (has actual downloadable files, not JS-walled) or the NetMod Telegram channel
-   (t.me/netmod_vpn_channel — confirmed real via ddgs). Search smali for `nm-vmess` string and
-   hardcoded key near `AES`/`Cipher`. Ground truth. Package name `com.netmod.syna` for APK searches.
-2. If a newer APK can't be found: the 272-byte ciphertext is preserved in the user's pasted
-   `nm-vmess://` string in chat history — a future key candidate can be tested against it directly.
-3. Community sites that may hold the key: NetMod Telegram channel, phcorner threads
-   (login-walled from VPS), YouTube payload tutorials.
+**APK HUNT: COMPLETED 2026-08-08 — the current NetMod 4.2.0 (vc=635) APK was
+downloaded from apkcombo and dex-scanned.** Working mirror chain + scanner details
+in references/apk-hunting.md; re-runnable scanner in scripts/scan-dex-strings.py.
+
+DEX scan findings (classes2.dex, NetMod 4.2.0.635, verified this round):
+- `nm-vmess://` IS in the app — the import scheme is parsed in app code, and the
+  scheme family regex is: `(vmess|vless|trojan|trojan-go|socks|ssh|ss|ssr|dns|wireguard|nm-xray-json)://`
+  plus `nm-dns:// nm-http:// nm-socks:// nm-ss:// nm-ssh://` — i.e. `nm-` prefixes any
+  protocol, and the value after `nm-<proto>://` is the (possibly encrypted) blob.
+- `AESSettingsCipherMode` string → NetMod exposes an AES cipher-mode setting for
+  configs; the cipher may be user-selectable (explains why the static devkaj key fails).
+- `Lnetmodcore/Netmodcore;` + `Lgo/netmodcore/gojni/R;` → the crypto core is a **Go
+  native bridge (gojni)**. The real key/mode lives in native libs, NOT the dex —
+  next step: extract `config.armeabi_v7a.apk` from the XAPK and scan the `.so`
+  (Go string data like `_netsyna_netmod_` would appear as plain bytes).
+- SQLCipher (`net/zetetic/database/sqlcipher/*`) is used for the local DB (Room
+  models: AppsModel, ServerGroupModel, V2RayModel) — that's the "private config"
+  storage layer, distinct from the share-link crypto.
+
+Remaining work (not yet done):
+0. **MOSTLY DONE — see netmod-3key-scheme.md**: the 3 keys are extracted from
+   libgojni.so (base64 literals `<n3t5yn^Nn3tm0d>`, `_netsyna_netmod_`,
+   `nicetrybuddygoon`). The remaining step is verifying chunk-split order on the
+   user's real 272-byte payload and wiring the decryptor into the bot.
+1. ~~Extract native .so from `config.armeabi_v7a.apk` and scan for the key~~ — DONE,
+   keys found. Go pclntab walker: scripts/go-pclntab-symbols.py.
+2. Test candidate keys against the preserved 272-byte ciphertext (user's real
+   sample, in chat history): AES-128-ECB/CBC first, then GCM (SlipNet layout as reference).
+3. If the key is per-user or derived at import time (look for `SecretKeySpec` +
+   password/derivation inputs near the decrypt call), the bot needs the same
+   derivation — check `lockConfig`/password semantics in the dex.
 4. Key-candidate finding technique that WORKS (used for `_netsyna_netmod_`): search GitHub for
    existing VPN-decrypt projects (`api.github.com/search/repositories?q=<app>+vpn`), clone the
    repo, and read the PHP/Python decrypt handlers — devkaj/telegram-vpn-decrypt-bot had a

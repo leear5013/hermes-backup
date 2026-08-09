@@ -25,16 +25,16 @@
       "schedule_display": "every 720m",
       "repeat": {
         "times": null,
-        "completed": 0
+        "completed": 1
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-08-08T13:26:51.611784+00:00",
-      "next_run_at": "2026-08-09T10:37:36.661084+00:00",
-      "last_run_at": null,
-      "last_status": null,
+      "next_run_at": "2026-08-09T10:37:41.393206+00:00",
+      "last_run_at": "2026-08-08T22:37:41.393206+00:00",
+      "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
       "deliver": "local",
@@ -49,11 +49,8 @@
         "terminal"
       ],
       "workdir": null,
-      "fire_claim": {
-        "at": "2026-08-08T22:37:36.661084+00:00",
-        "by": "d7604695afba:2"
-      }
+      "fire_claim": null
     }
   ],
-  "updated_at": "2026-08-08T22:37:36.661320+00:00"
+  "updated_at": "2026-08-08T22:37:41.393372+00:00"
 }
