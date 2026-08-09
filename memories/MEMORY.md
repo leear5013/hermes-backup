@@ -6,7 +6,7 @@ before/after = DATES → 7-day chunks. /s/ links DON'T resolve → web_search 's
 §
 Micro-SaaS side income research (boring industries).
 §
-Hermes auto-backup: repo leear5013/hermes-backup, 12h cron 'hermes-backup-github' (no_agent, deliver=local, exec wrapper). Tokenless via ~/.git-credentials; state.db redacted pre-push (ghp_*/sk-*/telegram-token patterns incl \d{8,10}:[A-Za-z0-9_-]{30,}). Restore: hermes-backup-restore skill.
+Hermes auto-backup: repo leear5013/hermes-backup, 12h cron 'hermes-backup-github' (no_agent, deliver=local, exec wrapper). Tokenless via ~/.git-credentials; state.db redacted pre-push (ghp_*/sk-*/telegram-token patterns incl \d{8,10}:[A-Za-z0-9_-]{30,}). Agent-terminal runs of backup-to-github.sh are BLOCKED (rm -rf/reset --hard misread as lifecycle cmd) — manual guard-friendly push steps in hermes-backup-restore skill. Restore: hermes-backup-restore.
 §
 CRITICAL: background tasks (delegate_task, long scripts) need real-time progress updates every few minutes — silence frustrates Hesham.
 §

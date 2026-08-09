@@ -7,6 +7,21 @@ on a real 4.x sample), so the APK is the only ground truth.
 
 ## What WORKS from the VPS (verified 2026-08-08)
 
+0. **APKMirror download chain (VERIFIED 2026-08-09, HTTP Injector 6.5.0):**
+   - Index: `https://www.apkmirror.com/apk/evozi/http-injector/` → links like
+     `/apk/evozi/http-injector/http-injector-ssh-v2ray-vpn-6-5-0-release`.
+   - Release page: grep `href="[^"]*-android-apk-download/"` (universal variant
+     has NO `-2-` in the slug; `...-6-5-0-2-android-apk-download/` is the
+     armeabi-only variant). The `download` link on this page is ONLY social
+     share buttons — do NOT regex `href="[^"]*download[^"]*"` blindly, the
+     FIRST hit is a twitter/telegram share URL.
+   - Variant page → keyed URL: `grep -oE 'href="[^"]*/download/\?key=[0-9a-f]{40}"'`
+     → `https://www.apkmirror.com/apk/.../download/?key=<40-hex>` → **the APK
+     bytes, content-type application/vnd.android.package-archive**. The old
+     `download.php?id=...&key=...` pattern is gone (2026).
+   - Beware: fetching the variant page's own URL back (self-referencing href)
+     yields the HTML shell (456KB) — check content-type/length before trusting.
+
 1. **Find the official Telegram channel with ddgs** (public preview is scrapeable):
    `ddgs.text('netmod vpn telegram channel official t.me')` → `t.me/netmod_vpn_channel`.
 2. **Read channel preview** `curl -sL 'https://t.me/s/<channel>'` — HTML contains post
