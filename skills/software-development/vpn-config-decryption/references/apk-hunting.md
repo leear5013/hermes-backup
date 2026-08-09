@@ -7,18 +7,17 @@ on a real 4.x sample), so the APK is the only ground truth.
 
 ## What WORKS from the VPS (verified 2026-08-08)
 
-0. **APKMirror download chain (VERIFIED 2026-08-09, HTTP Injector 6.5.0):**
+0. **APKMirror download chain (BROKEN 2026-08-09 — JS-gated; use apkcombo §4 instead):**
+   Historically: index → release page → variant page → `/download/?key=<40-hex>`
+   → APK bytes. NOW fetching the keyed URL returns `text/html` (457KB) with
+   `?redirected=t` — the download is gated behind JS from this VPS. Kept as
+   reference only:
    - Index: `https://www.apkmirror.com/apk/evozi/http-injector/` → links like
      `/apk/evozi/http-injector/http-injector-ssh-v2ray-vpn-6-5-0-release`.
-   - Release page: grep `href="[^"]*-android-apk-download/"` (universal variant
-     has NO `-2-` in the slug; `...-6-5-0-2-android-apk-download/` is the
-     armeabi-only variant). The `download` link on this page is ONLY social
-     share buttons — do NOT regex `href="[^"]*download[^"]*"` blindly, the
-     FIRST hit is a twitter/telegram share URL.
-   - Variant page → keyed URL: `grep -oE 'href="[^"]*/download/\?key=[0-9a-f]{40}"'`
-     → `https://www.apkmirror.com/apk/.../download/?key=<40-hex>` → **the APK
-     bytes, content-type application/vnd.android.package-archive**. The old
-     `download.php?id=...&key=...` pattern is gone (2026).
+   - Release page: grep for `-android-apk-download/` hrefs (universal variant has
+     NO `-2-` in the slug; `...-6-5-0-2-android-apk-download/` is the armeabi-only
+     variant). The `download` link on this page is ONLY social share buttons —
+     do NOT regex `href=...download...` blindly, the FIRST hit is a twitter share URL.
    - Beware: fetching the variant page's own URL back (self-referencing href)
      yields the HTML shell (456KB) — check content-type/length before trusting.
 
@@ -42,6 +41,36 @@ on a real 4.x sample), so the APK is the only ground truth.
    - Download: `curl -L '<decoded-url>' -o netmod.apk` then verify magic bytes
      (`PK\x03\x04` — APK/XAPK are zips). `file` may be absent on slim hosts; use
      `head -c 4 | od -An -c`.
+   - **Newer apkcombo variant that ALSO WORKS (2026-08-09, HTTP Injector 6.5.0):**
+     the `/download/apk` page embeds `<a href="/r2?u=<url>">` links where `u` is
+     DOUBLE percent-encoded (not base64). `urllib.parse.unquote` twice → real R2
+     storage URL (`apks.<hash>.r2.cloudflarestorage.com/...`). GET
+     `https://apkcombo.com/r2?u=<encoded>` with a browser Referer → 200,
+     `content-type: application/xapk-package-archive`, real bytes. `.apks` = zip of
+     `com.<pkg>.apk` (base) + `config.<arch>/<lang>.apk` splits + manifest.json —
+     extract base with python zipfile.
+   - **PACKED-APK PITFALL + THE FIX (HTTP Injector 6.5.0, 2026-08-09):** base
+     `classes.dex` (22KB) is a DexHelper/ACFNAME packer stub — real code encrypted,
+     dex strings-scan is useless. `assets/audience_network/*.dex` = Meta ads SDK (noise
+     only). `resources.arsc` strings-scan works (found `https://http-injector.firebaseio.com`
+     + `httpinjector.com` still embedded). **BUT the whole app string table (class
+     names + API paths + UA) survives as PLAINTEXT in the native split libs** — extract
+     `config.arm64_v8a.apk` (or armeabi variant) from the .apks and regex-scan
+     `lib/arm64-v8a/libdatajar.so` (~20MB, the packed-dex carrier; contains NO dex
+     magic itself) and `libdexjniehi.so` (ehi-cloud JNI bridge). This is what found
+     the cloud API paths `/httpinjector/{config,import_config,export_config,backup,
+     login,servers,attest_config}` + `/iap/verification` + `User-Agent: Evozi-EHI/1.4.1`
+     that the base-APK dex scan missed entirely. No unpacking needed.
+   - apkcombo old-versions page only lists the last ~3 versions (HTTP Injector:
+     6.4.0/6.4.1/6.5.0 only); the `/versions/` page has the same 3 — no older
+     unpacked build. 6.4.1 DOES download via the identical r2 chain
+     (`/download/phone-6.4.1-apk` → `/r2?u=` → 68.7 MB `application/xapk-package-archive`).
+     **Disk-full pitfall (bit us 2026-08-09): extracting a 68 MB .apks into
+     `/data/workspace` died with `OSError: [Errno 28] No space left on device` —
+     /data has a 500 MB budget; extract large bundles into `/opt` or `/tmp` (1.8 TB
+     overlay) and copy only small artifacts (dex/so string dumps) back.**
+     APKMirror keyed `/download/?key=` URL now returns an HTML shell redirect
+     (`?redirected=t`) from this VPS; Softpedia 403s.
 5. **If Telegram mirror needed instead**: the channel attaches APKs as documents, but
    preview pages won't hand you the file. Options: have the user forward the APK to
    the decrypt bot (bot API gives you the file_id), or use a MTProto client.
@@ -65,6 +94,20 @@ on a real 4.x sample), so the APK is the only ground truth.
   — `unzip`/`file` binaries are NOT installed on this VPS.
 
 ## Decompiling WITHOUT java (this VPS has no java/jadx/apktool — and no `strings` binary either!)
+- **NEW (2026-08-09): `androguard 4.1.4` is installed** (`/opt/venv/bin/pip install androguard`)
+  — use it for binary AXML/ARSC instead of raw regex (a compiled AndroidManifest.xml
+  has ZERO printable runs; regex finds nothing). Recipe:
+  `from androguard.core.apk import APK; a = APK('app.apk')` then
+  `a.get_activities()`, `a.get_package()`, and for intent-filters/deep-links:
+  `xml = a.get_android_manifest_axml().get_xml_obj()` → `xml.iter('activity')` →
+  iterate children for `intent-filter` → `data` elements carry `scheme`/`host`/
+  `pathPattern` attrs. This is how HTTP Injector's deep links were recovered:
+  `ConfigImportActivity` ↔ host `config.ehi.link` pathPattern `/.*` + `*.ehi`/
+  `*.bin`/`*.enc` file intents; `DeepLinkActivity` ↔ scheme `httpinjector://`.
+  **Gotcha:** `get_android_manifest_axml()` ALREADY returns an `AXMLPrinter` —
+  wrapping it in `AXMLPrinter()` again raises `TypeError: a bytes-like object is
+  required, not 'AXMLPrinter'`. Also `logging.disable(logging.CRITICAL)` first to
+  silence its noisy debug output.
 The APK is a zip; pull `classes*.dex` out with python zipfile, then hunt the key in
 dex bytes directly — no jadx needed for a hardcoded string. **Re-runnable scanner:
 `scripts/scan-dex-strings.py`** (takes an .apk or .xapk, extracts all dex files, regex-filters
