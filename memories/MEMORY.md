@@ -14,6 +14,6 @@ Hermes on Railway: use /opt/venv/bin/{python,hermes} (NOT system python3); gatew
 §
 nm-vmess:// CRACKED 2026-08-09 (NetMod 4.2.0.635): base64 → AES-128-ECB whole-payload try-loop over 3 keys until pkcs7-valid; key0 <n3t5yn4^n3tm0d> (digit-4) wins, then _netsyna_netmod_, nicetrybuddygoon. Decryptor in vpn-config-decryption skill. RasdAgent token NOT in .env (gateway bot → 409); recover via session_search BOT_TOKEN.
 §
-Sandbox reset 2026-08-08 wiped /opt — bots rebuild from vpn-config-decryption templates/decrypt_bot.py + zhgddm/npv- raw fetches. Storage: overlay 1.8TB (/opt/work scratch), /data 500MB.
+Storage: NEVER download heavy apps/files into /data (500MB cap — user correction 2026-08-10). All scratch/build/temp → /opt/work (1.8TB overlay).
 §
 Port obfuscated Dalvik smali to native Java, not Python — Java shift/sign-extend semantics (install default-jdk; jre-headless lacks javac).

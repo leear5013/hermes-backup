@@ -2,9 +2,9 @@
   "_README": "LEGACY MIRROR of the gateway routing index (the primary copy lives in the gateway_routing table in ~/.hermes/state.db). Maps messaging session keys (agent:main:<platform>:...) to active session IDs. This is NOT the session list. ALL sessions (CLI, TUI, and gateway) live in ~/.hermes/state.db and are shown by `hermes sessions list` and `/sessions`. Disable this file with `gateway.write_sessions_json: false` in config.yaml.",
   "agent:main:telegram:dm:874305381": {
     "session_key": "agent:main:telegram:dm:874305381",
-    "session_id": "20260808_123526_2386e6a2",
-    "created_at": "2026-08-08T12:35:26.802609",
-    "updated_at": "2026-08-10T01:19:54.977207",
+    "session_id": "20260810_161846_5bafdc08",
+    "created_at": "2026-08-10T16:18:46.385845",
+    "updated_at": "2026-08-10T16:18:59.005913",
     "display_name": "hesham hatem",
     "platform": "telegram",
     "chat_type": "dm",
@@ -14,7 +14,7 @@
     "cache_read_tokens": 0,
     "cache_write_tokens": 0,
     "total_tokens": 0,
-    "last_prompt_tokens": 141485,
+    "last_prompt_tokens": 0,
     "estimated_cost_usd": 0.0,
     "cost_status": "unknown",
     "expiry_finalized": false,
@@ -24,7 +24,7 @@
     "last_resume_marked_at": null,
     "active_turn_token": null,
     "active_turn_started_at": null,
-    "is_fresh_reset": false,
+    "is_fresh_reset": true,
     "was_auto_reset": false,
     "auto_reset_reason": null,
     "reset_had_activity": false,
@@ -32,7 +32,7 @@
     "model_override": {
       "model": "0731",
       "provider": "openai-api",
-      "base_url": "https://9router-iitb-production.up.railway.app/v1"
+      "base_url": "https://9router-production-d178.up.railway.app/v1"
     },
     "origin": {
       "platform": "telegram",

@@ -1,0 +1,29 @@
+{
+  "log": { "loglevel": "warning" },
+  "inbounds": [
+    { "port": 10808, "listen": "127.0.0.1", "protocol": "socks", "settings": { "udp": true } }
+  ],
+  "outbounds": [
+    {
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "127.0.0.1",
+            "port": 8080,
+            "users": [{ "id": "REPLACE_WITH_YOUR_UUID", "encryption": "none" }]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "mab.etisalat.com.eg",
+          "pinnedPeerCertSha256": "REPLACE_WITH_SELF_SIGNED_CERT_SHA256"
+        },
+        "wsSettings": { "path": "/fhxkzop4vbll", "headers": { "Host": "mab.etisalat.com.eg" } }
+      }
+    }
+  ]
+}
