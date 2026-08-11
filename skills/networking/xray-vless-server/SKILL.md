@@ -26,14 +26,24 @@ description: Host your own VLESS server on Railway with fake-SNI evasion.
 3. Self-signed cert (CN/SAN cosmetic — server ignores requested SNI and serves this cert):
    `openssl req -x509 -nodes -newkey rsa:2048 -keyout server.key -out server.crt -days 3650 -subj "/CN=mab.etisalat.com.eg" -addext "subjectAltName=DNS:mab.etisalat.com.eg"`
 4. Deploy → Railway → Settings → Networking → **TCP Proxy** → internal port 8080 → Railway assigns `shuttle.proxy.rlwy.net:PORT`.
-5. Link:
-   `vless://UUID@<proxy-domain>:<PORT>?encryption=none&security=tls&sni=mab.etisalat.com.eg&allowInsecure=1&type=ws&host=mab.etisalat.com.eg&path=%2F<path>#name`
+5. Link (per client core — see Link param matrix):
+   `vless://UUID@<proxy-domain>:<PORT>?encryption=none&security=tls&sni=mab.etisalat.com.eg&<cert-param>&type=ws&host=mab.etisalat.com.eg&path=%2F<path>#name`
+   where `<cert-param>` = `allowInsecure=1` (old cores, vpnjantit-style) or `pcs=<sha256hex>` (Xray ≥26 / new v2rayNG). NEVER `fp=<hex>`.
 6. **Caveat to tell the user up front**: TCP proxy public port is a random high port — networks/eAPNs that only allow 443 egress will block it. Trade-off, not a bug.
 
-## Xray 26 client pitfall (discovered 2026-08-10)
-- Xray-core ≥ 26.x REMOVED `allowInsecure` from `tlsSettings`: config fails to start with `The feature "allowInsecure" has been removed and migrated to "pinnedPeerCertSha256"`.
-- Mobile apps (v2rayNG / NekoBox / V2Box) still accept `allowInsecure=1` in links — fine for the real deployment.
-- For Xray-CLI local testing on new versions: set `pinnedPeerCertSha256` to your self-signed cert's SHA-256, or pin an older Xray release.
+## Link param matrix — cert validation (CRITICAL, verified 2026-08-11)
+Server-side Xray ≥26 removed `allowInsecure` from client tlsSettings; **client-side link-param support varies by core**:
+
+| Param in vless:// link | Means | Works on |
+|---|---|---|
+| `allowInsecure=1` / `insecure=1` | skip cert validation | Older cores (iOS v2ray 1.2.x, older v2rayNG, NekoBox) — vpnjantit ships these |
+| `pcs=<sha256hex>` | pinnedPeerCertSha256 (cert pinning) | Xray ≥26 cores / new v2rayNG (share-link standard, v2rayN issue #716 → `pcs`) |
+| `fp=<hex>` | **uTLS ClientHello fingerprint** (chrome/firefox/safari/random), NOT cert pinning | NEVER for cert pinning — hex values invalid there |
+
+- 2026-08-11 failure: link with `&fp=976B...` (hex) → iOS v2ray 1.2.19.2209: `unsupported fingerprint [976B...]` + "No server available". Server was fine (verified E2E via xray CLI client); only the link param was wrong. `fp=` expects names like `chrome`/`safari`, not a hash.
+- UI fallback (works everywhere): import the node, open edit, set "cert fingerprint / pinnedPeerCertSha256" field (new cores) or tick "Allow Insecure" (old cores) — the in-app field is unambiguous regardless of link parsing.
+- If the user's client/core is unknown, ship BOTH link variants (insecure-style + pcs-style) or ask which app first. **TEST the link in the user's ACTUAL client before declaring done** — server-side E2E (xray CLI + curl through the deploy) proves the server, not the client's link parsing.
+- Xray-CLI local testing on new versions: set `pinnedPeerCertSha256` (hex, colons stripped) in the JSON tlsSettings — that's a JSON field, NOT the `fp=` link param.
 - Do NOT hand-roll VLESS frames in Python for E2E tests — server logs `invalid request version` and it wastes a loop. Use the real xray client binary + curl.
 
 ## Local E2E verification (do this BEFORE deploying)
@@ -46,7 +56,7 @@ description: Host your own VLESS server on Railway with fake-SNI evasion.
 
 ## Permanent cert strategy (zero-friction for user — VERIFIED)
 - Generate cert ONCE locally, commit `certs/server.crt` + `certs/server.key` to the repo and `COPY` them in the Dockerfile. Build-time `openssl req` re-generates on EVERY rebuild → fingerprint changes → every saved `fp=` link dies on redeploy → user calls it "tiring". (2026-08-10: user's deployment redeployed between sessions this same way.)
-- Precompute fingerprint from committed cert (`openssl x509 -in certs/server.crt -noout -fingerprint -sha256`, strip colons), bake it into README link as `&fp=<hex>`, so user never runs a command. Leave ONE placeholder (`SERVER:PORT`) in the link.
+- Precompute fingerprint from committed cert (`openssl x509 -in certs/server.crt -noout -fingerprint -sha256`, strip colons). Bake the cert pin into the README link as `pcs=<hex>` (NOT `fp=` — that's the uTLS fingerprint param) or into the app's pinned-cert field, so the user never runs a command. Leave ONE placeholder (`SERVER:PORT`) in the link.
 - User's only remaining manual step = the dashboard TCP-Proxy click. Give a 30-second numbered checklist + ready link.
 
 ## Verify whether the user's deployment is proxied (no dashboard access)
