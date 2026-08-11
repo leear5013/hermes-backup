@@ -25,6 +25,14 @@ echo | openssl s_client -connect HOST:PORT -servername fake.example.com -brief  
 Both succeed and present the server's own cert → server terminates TLS → fake SNI works (verified: gr1.vpnjantit.com:10002 = 51.195.91.135, cert CN=gr1.vpnjantit.com, TLS1.3 both ways).
 Fake SNI rejected/fails → SNI-routed edge (e.g. Railway HTTPS) → you need a TCP proxy (below).
 
+## SNI candidate selection — camouflage quality matters, not just acceptance
+Tested 2026-08-11 with 36 candidates against the user's live Railway TCP proxy (`*.proxy.rlwy.net:PORT`). Two tests decide:
+1. **Proxy accepts the SNI**: TLS handshake to the proxy with `-servername <candidate>`. (All 36 gov.eg+ misc passed — server terminates TLS itself, cert mismatch irrelevant.)
+2. **Real domain, live HTTPS** (DPI sees a resolvable name that actually serves): `https://<candidate>/` HEAD probe. HTTP 200/3xx = strong camo. Prune: SSL CERT_VERIFY_FAILED on the real site (www.mod.gov.eg, psm.gov.eg, www.manpower.gov.eg, www.moc.gov.eg, www.mohp.gov.eg — broken certs look suspicious), timeouts (digital.gov.eg, ekb.eg, enationality.moi.gov.eg, mped.gov.eg, www.nccm.gov.eg), foreign domains returning 403/405 HEAD (speedtest.net, www.nagwa.com, ar.awkafonline.com).
+
+**Winner after full test: `mcit.gov.eg`** (Ministry of Communications & IT — ideal profile for a tech/data user; HTTP 200 + TLS 1.3). Also strong: www.parliament.gov.eg, www.gafi.gov.eg, scu.eg, www.capmas.gov.eg, mof.gov.eg, www.investinegypt.gov.eg, traffic.moi.gov.eg, www.civilaviation.gov.eg. (User's link later swapped from `mab.etisalat.com.eg` → `mcit.gov.eg`.)
+Automated helper: `scripts/sni_probe.py` (threaded; proxy handshake + domain liveness in one run, ~36 SNIs in ~30s). Run any future candidate list through it.
+
 ## Railway: HTTPS edge vs TCP Proxy
 - Default HTTPS (`your-app.up.railway.app:443`) terminates TLS at the edge and routes on SNI/Host → fake SNI cannot reach your app. `insecure=1` can't help; the mismatch happens at Railway's edge, not your client.
 - **TCP Proxy** (Service → Settings → Networking → TCP Proxy → internal port): raw L4 passthrough, edge does NOT touch TLS → Railway assigns `*.proxy.rlwy.net:<random-port>`. This is the vpnjantit-style path. Internal port can be 443 or 8080.
@@ -73,6 +81,9 @@ Build-time cert generation (`openssl req` in Dockerfile RUN) re-generates on EVE
 
 ## Scratch storage rule
 Never put heavy downloads (Xray zip ~21MB, APKs) under /data (500MB cap) — scratch/build to /opt/work (1.8TB overlay).
+
+## Session hygiene: kill leftover xray test processes
+Xray server/client/verify processes started for LOCAL E2E tests (`xray run -c ...` via background=true) keep running after the session ends — in the 2026-08-11 session three of them had ~16–17h uptime eating resources (one in /data/workspace/xray-build, two in /opt/work/xray-build). After finishing a test deployment, kill them before wrapping up (`process kill` per session_id; exit code -15 confirms SIGTERM). They are not needed for the deployed Railway service — the deployed server runs on Railway's side, not the local box. Also check `process list` before starting a new test to avoid duplicate daemons.
 
 ## References
 - `references/railway-fake-sni.md` — full tested server/client configs, Dockerfile, probe outputs, Railway facts.
