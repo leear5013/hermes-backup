@@ -33,6 +33,14 @@ Tested 2026-08-11 with 36 candidates against the user's live Railway TCP proxy (
 **Winner after full test: `mcit.gov.eg`** (Ministry of Communications & IT — ideal profile for a tech/data user; HTTP 200 + TLS 1.3). Also strong: www.parliament.gov.eg, www.gafi.gov.eg, scu.eg, www.capmas.gov.eg, mof.gov.eg, www.investinegypt.gov.eg, traffic.moi.gov.eg, www.civilaviation.gov.eg. (User's link later swapped from `mab.etisalat.com.eg` → `mcit.gov.eg`.)
 Automated helper: `scripts/sni_probe.py` (threaded; proxy handshake + domain liveness in one run, ~36 SNIs in ~30s). Run any future candidate list through it.
 
+### CRITICAL: handshake PASS ≠ tunnel works (stateful/destination-aware filters)
+Verified 2026-08-11 on the user's Egyptian zero-quota network: PowerShell TLS handshake (`SslStream` with `{$true}` callback) and `openssl s_client` **passed for EVERY SNI** — even foreign ones like speedtest.net — and `Test-NetConnection <proxy> -Port <port>` returned `TcpTestSucceeded: True`. Yet in a real VPN session **only 1–2 SNIs carried traffic** at 0% quota. Lesson: raw handshakes prove nothing about the funnel; the filter is stateful or destination-aware and kills the full session after the handshake survives.
+- **The ONLY test that counts is E2E byte flow**: spin up a real client per SNI (same VLESS+WS+TLS params as the user's working link, `pinnedPeerCertSha256` — NOT `allowInsecure`, which modern xray.exe rejects), push traffic through an egress URL (e.g. `http://example.com/`), PASS = HTTP 200. Harness: `scripts/sni_tunnel_test.ps1`.
+- **Always put a KNOWN-GOOD SNI first as positive control** (the one the user confirmed works). Control FAILs → harness broken, not the SNIs; fix the harness before trusting any result.
+- **Destination-IP allowlist diagnosis**: if `Test-NetConnection` to the proxy IP fails at 0% quota, the funnel blocks by destination IP → **no fake SNI can ever fix it**; only a server on a whitelisted IP would work. Don't burn hours on SNI lists in that case.
+- **Zero-quota whitelists only activate when quota is exhausted** — testing with data remaining passes everything and teaches nothing. Label harnesses with this warning.
+- **Prefer the user's own client app** (Karing/v2rayNG/Streisand) for tests — duplicate a node, swap only `sni=`/`host=`, check an egress URL. User correction: "Why xray specially? I have karing" — don't force a fresh xray binary download when they already have a GUI client; manual per-SNI swapping on 5–6 shortlisted domains beats automation only when the user resists installing new tools. Offer the xray harness, but lead with their existing client.
+
 ## Railway: HTTPS edge vs TCP Proxy
 - Default HTTPS (`your-app.up.railway.app:443`) terminates TLS at the edge and routes on SNI/Host → fake SNI cannot reach your app. `insecure=1` can't help; the mismatch happens at Railway's edge, not your client.
 - **TCP Proxy** (Service → Settings → Networking → TCP Proxy → internal port): raw L4 passthrough, edge does NOT touch TLS → Railway assigns `*.proxy.rlwy.net:<random-port>`. This is the vpnjantit-style path. Internal port can be 443 or 8080.
@@ -87,3 +95,6 @@ Xray server/client/verify processes started for LOCAL E2E tests (`xray run -c ..
 
 ## References
 - `references/railway-fake-sni.md` — full tested server/client configs, Dockerfile, probe outputs, Railway facts.
+- `references/sni-selection-egypt.md` — Egypt 0%-quota whitelist session: 36-domain candidate list, sweep results, working-link params.
+- `scripts/sni_probe.py` — server-side sweep: proxy TLS handshake per SNI + real-domain HTTPS liveness (fast triage).
+- `scripts/sni_tunnel_test.ps1` — definitive Windows E2E test: real xray VLESS tunnel per SNI with cert pin; known-good control FIRST; run at 0% quota.

@@ -258,16 +258,16 @@
     "archived_at": null,
     "created_at": "2026-08-10T17:59:04.845407+00:00",
     "created_by": "agent",
-    "last_patched_at": "2026-08-11T21:45:38.894006+00:00",
+    "last_patched_at": "2026-08-11T23:43:41.813437+00:00",
     "last_reused_patch_generation": 14,
-    "last_used_at": "2026-08-11T21:45:48.544801+00:00",
-    "last_viewed_at": "2026-08-11T21:45:48.539994+00:00",
-    "patch_count": 14,
-    "patch_generation": 14,
+    "last_used_at": "2026-08-11T23:43:15.599372+00:00",
+    "last_viewed_at": "2026-08-11T23:43:15.591449+00:00",
+    "patch_count": 17,
+    "patch_generation": 17,
     "pinned": false,
     "state": "active",
-    "use_count": 9,
-    "view_count": 9
+    "use_count": 10,
+    "view_count": 10
   },
   "xray-vless-server": {
     "archived_at": null,
