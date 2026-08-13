@@ -109,6 +109,25 @@ except ValueError:
 - **⚠️ Xray-core REMOVED `allowInsecure`/`insecure` (force date 2026-06-01; hard-reject from ~v26.1.31)** — the fake-SNI links above now FAIL on any updated v2rayNG/v2rayN/Xray-client (error: `The feature "allowInsecure" has been removed and migrated to "pinnedPeerCertSha256"`). Timeline: v26.1.23 added `pinnedPeerCertSha256` (warn-only); ~v26.1.31 hard-error on `allowInsecure`; v26.2.6 declared force-offline 2026-06-01. Affected: ONLY traditional-TLS nodes relying on skip-verify (self-signed / SNI mismatch). **Not affected:** VLESS+Reality (immune), sing-box / mihomo-Clash (separate cores — `tls.insecure` / `skip-cert-verify` still work), trusted-cert nodes (just delete the flag). **Migration for self-signed/self-CA nodes = cert-fingerprint PINNING, not allowInsecure:** grab your cert's SHA-256 fingerprint `openssl x509 -in cert.crt -noout -fingerprint -sha256` → strip colons → uppercase hex (e.g. `D7DE:F97A:…:282F` → `D7DEF97A…282F`); put it in client config `streamSettings.tlsSettings.pinnedPeerCertSha256: "<hex>"` (+ keep `serverName`). Only the FULL cert SHA-256 supported — the old `pinnedPeerCertificateChainSha256` / `...PublicKeySha256` were also removed; a fake fingerprint string like `"ignore"` fails JSON-load with `encoding/hex: invalid byte`. Share-link clients don't expose a pinned-fingerprint URI param, so raw-link handoff must note the fingerprint as a separate manual config step (this is the remaining UX gap vs the old one-line `allowInsecure=1` link). Full verified walkthrough (server + client + local E2E HTTP 200 through the pinned fake-SNI tunnel): `references/xray-fake-sni-railway.md`.
 - Identifying where a pasted config came from: compare UUID, path, and host against known repos/panels — mismatches mean it's third-party, not the user's own deploy (checked the pasted link vs the repo: different UUID, different path → panel config, not the Railway one).
 
+### ssh:// share links (SSH-injector / NetMod SSH export)
+- Format: `ssh://<user>:<pass>@<host>:<port>?u+<base64>=<front-host:port@front-user:front-pass>`
+  - `<user>:<pass>@<host>:<port>` before `?` = the REAL SSH server creds (what the tunnel dials).
+  - `u+<base64>` = encrypted payload (strip the literal `u+`).
+  - The `=` after the base64 is the **fragment separator, NOT base64 padding** — the fragment is the proxy front (`host:port@user:pass`, usually an Egyptian whitelisted host).
+  - **PARSING PITFALL (cost real debugging time 2026-08-13):** extract the payload as "everything after `u+` up to the FIRST `=`". Do NOT strip/re-pad the whole query. A pasted URI may also carry a stray char that makes `len(b64)%4 != 0` — regex-strip non-`[A-Za-z0-9+/=]` chars and re-pad before decoding. Then `base64.b64decode(b64 + "="*(-len(b64)%4))`.
+  - **Crypto: identical to nm-vmess** — AES-128-ECB + PKCS7 try-loop over the 3 NetMod keys (`<n3t5yn4^n3tm0d>`, `_netsyna_netmod_`, `nicetrybuddygoon`); on pkcs7-valid, `json.loads(unpadded)` → SSH config JSON (same shape as NPVTUNNEL output: sshHost/sshPort/sshUsername/sshPassword/payload/...).
+- `nm-vless://` = same 3-key AES-128-ECB scheme, but the plaintext is a **`vless://` URI string** (not JSON) — output verbatim, do NOT `json.loads`. **Verified live 2026-08-13:** key `_netsyna_netmod_` decrypted a real nm-vless into `164245b8-...@www.nagwa.com:8443?security=tls&...&sni=...`.
+- Parsing/decode code + the 2026-08-13 live example: `references/ssh-uri-scheme.md`.
+
+### PythonAnywhere webhook deployment (bot survives the VPS)
+- Long-poll `bot.py` dies with the box. For 24/7 use the **Flask webhook** `bot_webhook.py`:
+  - `app.route("/webhook", methods=["POST"])` reads `request.get_json`; dispatches document/text exactly like the long-poll loop.
+  - PA WSGI entry (`wsgi.py`): `from bot_webhook import app; application = app` (edit `PROJECT_DIR`).
+  - One-time: `tg_api("setWebhook", url="https://<user>.pythonanywhere.com/webhook")` (or `curl -F url=...`).
+  - **HARDENING (learned 2026-08-13):** wrap every `tg_api("sendMessage", ...)` in try/except and just `log.error` on failure. A 400 (bad chat) would otherwise raise → webhook returns 500 → Telegram **retries the update forever** (duplicate/loop). Always return `"ok"` from `/webhook`.
+  - Flask + pycryptodome + argon2-cffi + msgpack are pre-installed on PA's standard venv.
+- Full step-by-step + the live-deploy repo (`leear5013/rasdagent-decrypt-bot`): `references/pythonanywhere-deploy.md`.
+
 ## Deliverables pattern: Telegram decrypt bot → templates/decrypt_bot.py
 - Pure stdlib long-polling (urllib, no pip deps): getUpdates(offset, timeout=50) → getFile(file_id) → download `file/bot<token>/<path>` → dispatch by extension → sendMessage (split >4096 chars).
 - Extension map: .npvt/.npv4/.inpv/.npv → NPVTUNNEL; .hc/.hjson → HTTPCUSTOM; .ehi → HTTPINJECTOR; .dt → DARKTUNNEL; .ssc → SSCCUSTOM; .txt → sniff all 5 engines.
