@@ -118,6 +118,7 @@ except ValueError:
   - **Crypto: identical to nm-vmess** — AES-128-ECB + PKCS7 try-loop over the 3 NetMod keys (`<n3t5yn4^n3tm0d>`, `_netsyna_netmod_`, `nicetrybuddygoon`); on pkcs7-valid, `json.loads(unpadded)` → SSH config JSON (same shape as NPVTUNNEL output: sshHost/sshPort/sshUsername/sshPassword/payload/...).
 - `nm-vless://` = same 3-key AES-128-ECB scheme, but the plaintext is a **`vless://` URI string** (not JSON) — output verbatim, do NOT `json.loads`. **Verified live 2026-08-13:** key `_netsyna_netmod_` decrypted a real nm-vless into `164245b8-...@www.nagwa.com:8443?security=tls&...&sni=...`.
 - Parsing/decode code + the 2026-08-13 live example: `references/ssh-uri-scheme.md`.
+- Reusable `decrypt_netmod()` / `decode_ssh()` functions (copy-paste ready) live in that reference.
 
 ### PythonAnywhere webhook deployment (bot survives the VPS)
 - Long-poll `bot.py` dies with the box. For 24/7 use the **Flask webhook** `bot_webhook.py`:
