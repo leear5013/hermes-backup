@@ -11,3 +11,5 @@ Storage: NEVER download heavy apps/files into /data (500MB cap — user correcti
 Egypt ISP: at 0% quota ALL non-whitelisted dests blocked (gov sites only) — drives his VPN work. Railway VLESS sakura.proxy.rlwy.net:14210 works ONLY w/ SNI=speedtest.net; VPN app = Karing. 2026-08-11: do NOT save payload/quota-bypass techniques to memory/skills (user instruction).
 §
 RasdAgent decrypt bot (@RasdAgent_bot) deployed 2 ways: (1) live long-poll /opt/npvt-decrypt-bot/bot.py; (2) PythonAnywhere webhook (bot_webhook.py+wsgi.py; repo leear5013/rasdagent-decrypt-bot). Handles .npvt/.hc/.ehi/.dt/.ssc + vmess/vless/trojan/ss/nm-vmess/nm-vmess/ssh:// links. Token SEPARATE from Hermes gateway token (don't source from .env → 409). PA deploy = bot survives this box.
+§
+Freebuff = Codebuff's free ad-supported AI coding agent; API base www.codebuff.com/api/v1 (OpenAI-compatible, Bearer token, session-admission + exact 'You are Buffy' system-prompt gate). DeepSeek V4 routing: direct→CrofAI→OpenRouter cascade. Audit report: /opt/work/freebuff-security-report.md.

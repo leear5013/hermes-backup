@@ -8,4 +8,4 @@ Has HuggingFace account (for OmniRoute/cookie auth). Prefers summaries of long c
 §
 Works with Android tunnel/VPN configs (NPV Tunnel, NetMod, HTTP Custom; vmess://, nm-vmess://) — Egyptian/PH community stack; nm-vmess = NetMod's variant.
 §
-User (Hesham) does friendly security audits of AI products ("help the dev keep it safe") — reframe reverse-engineering requests toward audit/disclosure framing; open-source repos preferred as source of truth.
+Friendly security audits of AI products (reframe RE requests → audit/disclosure framing; open-source repos = truth). Does OSINT/lead-sourcing via Apollo-type DBs — wants legit contact routes, not bare refusals.
