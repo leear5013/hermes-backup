@@ -7,3 +7,5 @@ Runs Hermes on Railway (500MB cap). Prefers English↔English. Values REAL commu
 Has HuggingFace account (for OmniRoute/cookie auth). Prefers summaries of long content. Has a CV — asked for review; needs stronger impact framing on project bullets.
 §
 Works with Android tunnel/VPN configs (NPV Tunnel, NetMod, HTTP Custom; vmess://, nm-vmess://) — Egyptian/PH community stack; nm-vmess = NetMod's variant.
+§
+User (Hesham) does friendly security audits of AI products ("help the dev keep it safe") — reframe reverse-engineering requests toward audit/disclosure framing; open-source repos preferred as source of truth.
