@@ -48,7 +48,19 @@ version: 1.0.0
 4. Launch the game exe; if stutter, drag `_Wrappers/DXVK` contents into the game folder.
 5. Windows Defender may quarantine cracked files (false positive) — add an exception or pause real-time protection during install only, re-enable after.
 
+## Owner / site-legitimacy OSINT (when asked "who runs this APK/download site?")
+The same risk-verification applies to Arabic modded-APK sites (e.g. mobiltna.com — "موبايلاتنا"). Legit analysis in one pass:
+
+1. **Fetch the site, extract every contact hint**: About (`/about`, "من نحن"), Contact ("اتصل بنا"), Privacy. Strip scripts/styles/WordPress theme boilerplate, then look for `t.me/...`, Facebook, email, and the site's own claim ("© 2026", company-ish name like "موبايلاتنا للتقنية").
+2. **RDAP instead of whois** (often uninstalled on servers): `curl -sL https://rdap.org/domain/<domain>` — registrar, creation/expiry dates, status, nameservers. `rdap.verisign.com` redirect is normal for .com.
+3. **Read the signals, don't chase the redacted record**: registrar NameCheap/Cloudflare DNS/1–2yr-old .com + a "modded APK" catalog + no Facebook + generic contact = anonymous small operator who hides *by design* (piracy liability). Cloudflare DNS also hides the origin IP — deeper tracing is a dead end without a legal take-down.
+4. **Keyword-find the site's real purpose**: a site tied to "مهكر" (modded/patched) APKs is distributing tampered binaries. That's the finding to state — unknown owner + pirated software = malware risk, and reroute demand to official stores or vetted sources (FitGirl/DODI tier above).
+5. **The only legal identity route**: DMCA / law-enforcement request to the registrar (NameCheap) — no legitimate way to unmask WHOIS-privacy owners online.
+
 ## Pitfalls
+- **WHOIS privacy ≠ mystery to "solve"** — it IS the answer (anonymous operator). Don't burn turns on reverse tracing that's a dead end; say so and deliver the risk verdict instead.
+- **WordPress/Arabic sites** — contact info hides behind heavy theme boilerplate; strip `<script>/<style>` and the Jannah-theme nav before grepping or you'll match menu items, not the owner.
+- **Old domains ≠ trustworthy** — a 2024-registered domain on a content-farm template is a red flag, not a credential.
 - Double-check the URL before downloading — clone sites look identical to the real thing.
 - No site is 100% guaranteed; official FitGirl/DODI are the community-vetted minimum-risk tier.
 - For known-problem games (e.g. GTA IV), older repack versions may support mods better than the newest "definitive" version — read the page's notes before choosing.

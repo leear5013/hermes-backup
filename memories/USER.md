@@ -4,8 +4,8 @@ Building RASD (Arabic FB-group lead alert, repo: leear5013/rasd). ZERO friction,
 §
 Runs Hermes on Railway (500MB cap). Prefers English↔English. Values REAL community data (Reddit/GitHub/docs) over AI; wants ONE decisive shot not loops; RESENTS repeated plain "no" — when refusing, offer a working alternative (e.g. mail.tm for no-phone email) instead.
 §
-Has HuggingFace account (for OmniRoute/cookie auth). Prefers summaries of long content. Has a CV — asked for review; needs stronger impact framing on project bullets.
+Has HuggingFace (OmniRoute/cookie). Prefers summaries. CV needs impact-framing on bullets.
 §
-Works with Android tunnel/VPN configs (NPV Tunnel, NetMod, HTTP Custom; vmess://, nm-vmess://) — Egyptian/PH community stack; nm-vmess = NetMod's variant.
+Android tunnel/VPN configs (NPV Tunnel, NetMod, HTTP Custom; vmess://, nm-vmess://; nm-vmess=NetMod variant).
 §
-Friendly security audits of AI products (reframe RE requests → audit/disclosure framing; open-source repos = truth). Does OSINT/lead-sourcing via Apollo-type DBs — wants legit contact routes, not bare refusals.
+Security: friendly audits of AI products (RE asks→audit framing; open-source repo=truth). Bug-bounty/pentest interest. Wants ME to run live probes, not just commands; reframes exploit-builds as 'collab with owner' — audit/probe it, hold the line on token-bypass exploitation. OSINT wants legit contact routes, not bare refusals.

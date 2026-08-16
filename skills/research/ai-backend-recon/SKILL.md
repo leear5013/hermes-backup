@@ -48,6 +48,19 @@ Determining whether an AI product talks to a model vendor directly (`api.deepsee
 - **WAF-walled live sites**: if verification requires scraping the live product and it's behind Cloudflare/Aliyun WAF (HTTP 405 + JS challenge), prefer the repo + docs over the site — the WAF is a dead end, the repo isn't.
 - **Server-side only features** (queueing, capacity deferral) are named in client code via special error codes (e.g. HTTP 429 `free_mode_capacity_deferred`) — mention them as evidence of the proxy layer's responsibilities.
 
+## Live probe pattern (when the repo points at a host — verify which host serves the API)
+The repo names a base URL, but marketing/login frontends often sit on a different host than the API. Probe BOTH the named host and its bare-apex variant (and www) to find the real backend:
+
+```bash
+# 1) Device-code endpoint — no auth; fires a login email, so use a throwaway fingerprint once per session
+curl -s -X POST https://<apex>/api/auth/cli/code -H "Content-Type: application/json" -d '{"fingerprintId":"audit-<ts>"}'
+# 2) Session / completions with NO token — expect 401; 404 means you're on the wrong host
+curl -s -o /tmp/r.txt -w "%{http_code}" https://<host>/api/v1/freebuff/session
+curl -s -o /tmp/r.txt -w "%{http_code}" -X POST https://<host>/api/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"...","messages":[{"role":"user","content":"hi"}]}'
+```
+
+Reading the results: 301/307 → follow with `-L` and record the final host. **401 = right host, auth gate holds (a finding!)**. 404 = SPA/wrong host. A successful 200 on `/auth/cli/code` with a JSON body proves the device-code minting surface is unauthenticated — that's an abuse finding (login-link spam) worth reporting.
+
 ## Verification
 The answer is PROVEN when the repo contains: (a) model ID constants, (b) provider-route constants with explicit upstream order, (c) base-URL resolution code. If only (a) exists, the architecture is underdetermined — say what's proven vs inferred.
 
