@@ -419,6 +419,21 @@
     "use_count": 0,
     "view_count": 0
   },
+  "facebook-group-monitoring": {
+    "archived_at": null,
+    "created_at": "2026-08-16T00:00:58.463766+00:00",
+    "created_by": null,
+    "last_patched_at": null,
+    "last_reused_patch_generation": 0,
+    "last_used_at": "2026-08-16T00:00:58.480280+00:00",
+    "last_viewed_at": "2026-08-16T00:00:58.463790+00:00",
+    "patch_count": 0,
+    "patch_generation": 0,
+    "pinned": false,
+    "state": "active",
+    "use_count": 1,
+    "view_count": 1
+  },
   "findmy": {
     "archived_at": null,
     "created_at": "2026-08-15T14:27:16.703697+00:00",
@@ -695,14 +710,14 @@
     "created_by": null,
     "last_patched_at": "2026-08-08T18:54:22.955155+00:00",
     "last_reused_patch_generation": 1,
-    "last_used_at": "2026-08-14T16:47:00.556117+00:00",
-    "last_viewed_at": "2026-08-14T16:47:00.551822+00:00",
+    "last_used_at": "2026-08-16T02:14:59.219557+00:00",
+    "last_viewed_at": "2026-08-16T02:14:59.208822+00:00",
     "patch_count": 1,
     "patch_generation": 1,
     "pinned": false,
     "state": "active",
-    "use_count": 11,
-    "view_count": 11
+    "use_count": 12,
+    "view_count": 12
   },
   "himalaya": {
     "archived_at": null,
@@ -949,15 +964,15 @@
     "created_at": "2026-08-15T00:46:11.845558+00:00",
     "created_by": "agent",
     "last_patched_at": "2026-08-15T00:46:43.191574+00:00",
-    "last_reused_patch_generation": 0,
-    "last_used_at": "2026-08-15T00:46:39.821759+00:00",
-    "last_viewed_at": "2026-08-15T00:46:39.818561+00:00",
+    "last_reused_patch_generation": 2,
+    "last_used_at": "2026-08-16T02:14:24.435166+00:00",
+    "last_viewed_at": "2026-08-16T02:14:24.425305+00:00",
     "patch_count": 2,
     "patch_generation": 2,
     "pinned": false,
     "state": "active",
-    "use_count": 1,
-    "view_count": 1
+    "use_count": 2,
+    "view_count": 2
   },
   "opencode": {
     "archived_at": null,
@@ -1159,15 +1174,15 @@
     "created_at": "2026-08-15T01:08:17.973824+00:00",
     "created_by": "agent",
     "last_patched_at": "2026-08-15T01:08:39.166947+00:00",
-    "last_reused_patch_generation": 0,
-    "last_used_at": null,
-    "last_viewed_at": null,
+    "last_reused_patch_generation": 2,
+    "last_used_at": "2026-08-16T02:14:59.225191+00:00",
+    "last_viewed_at": "2026-08-16T02:14:59.215068+00:00",
     "patch_count": 2,
     "patch_generation": 2,
     "pinned": false,
     "state": "active",
-    "use_count": 0,
-    "view_count": 0
+    "use_count": 2,
+    "view_count": 2
   },
   "sdlc-review": {
     "archived_at": null,
