@@ -25,15 +25,15 @@
       "schedule_display": "every 720m",
       "repeat": {
         "times": null,
-        "completed": 18
+        "completed": 19
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-08-08T13:26:51.611784+00:00",
-      "next_run_at": "2026-08-18T10:48:42.582930+00:00",
-      "last_run_at": "2026-08-17T10:48:29.046129+00:00",
+      "next_run_at": "2026-08-18T22:49:13.546900+00:00",
+      "last_run_at": "2026-08-17T22:48:47.270853+00:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -50,7 +50,56 @@
       ],
       "workdir": null,
       "fire_claim": null
+    },
+    {
+      "id": "56927fe99007",
+      "name": "Career-Ops Daily Scan + Telegram Digest",
+      "prompt": "Daily career-ops job scan digest for Hesham (Data Engineer, Cairo). Runs career_ops_daily.sh which scans 45+ ATS portals via public APIs and greps for entry-level data-engineering roles. Non-empty stdout is delivered to Telegram; empty stdout means nothing new today (silent).",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "provider_snapshot": null,
+      "model_snapshot": null,
+      "base_url": null,
+      "script": "career_ops_daily.sh",
+      "no_agent": true,
+      "monitor_script": null,
+      "monitor_url": null,
+      "monitor_state": null,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "display": "0 8 * * *"
+      },
+      "schedule_display": "0 8 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 1
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-08-18T02:12:21.805114+00:00",
+      "next_run_at": "2026-08-19T08:00:00+00:00",
+      "last_run_at": "2026-08-18T08:01:03.356044+00:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "origin",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "874305381",
+        "chat_name": "hesham hatem",
+        "thread_id": null,
+        "user_id": "874305381"
+      },
+      "enabled_toolsets": null,
+      "workdir": null,
+      "fire_claim": null
     }
   ],
-  "updated_at": "2026-08-17T22:48:42.583110+00:00"
+  "updated_at": "2026-08-18T10:49:13.547052+00:00"
 }
