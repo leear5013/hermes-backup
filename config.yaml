@@ -8,12 +8,12 @@ compression:
   enabled: true
   threshold: 0.85
 command_allowlist:
-  - execute_code
+- execute_code
 onboarding:
   seen:
     profile_build_offered: true
     busy_input_prompt: true
-_config_version: 33
+_config_version: 34
 platforms:
   telegram:
     enabled: true
@@ -22,3 +22,14 @@ platforms:
       chat_id: '874305381'
       name: hesham hatem
       user_id: '874305381'
+model:
+  context_length: 1000000
+agent: {}
+custom_providers:
+- name: nine-router
+  base_url: https://9router-production-9faf.up.railway.app/v1
+  api_key: sk-90844728633e6fa1-06p396-4b56cc69
+  api_mode: openai
+  context_length: 1000000
+  discover_models: true
+  models: {}
