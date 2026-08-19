@@ -38,7 +38,28 @@ For: first intern/job hunting, automated application pipelines, resume/portfolio
 - **Cautionary**: auto-apply spam tools (LazyApply etc.) are widely panned — generic AI answers, irrelevant applications, ATS blacklist risk. Tailored quality beats bulk volume. Some employers explicitly reject AI-written applications (e.g. Anthropic policy) — keep the human in the loop.
 - **Real pain point**: job sites block headless browsers/egress IPs; a disabled user in the thread resorted to Hermes controlling THEIR mouse/browser. Egress IP gets flagged after ~3 requests — test with two identical requests before debugging prompts.
 
-## Research method (reusable)
+## Automated daily digest (current deployment on this box)
+
+`/opt/work/jobhunt_scanner.py` — unified free scanner, runs as **daily 08:00 cron** (`career_ops_daily.sh` → `56927fe99007`) delivering a **Telegram digest that prints ONLY new matches** (dedupe via `/opt/work/.jobhunt_cache/seen.json`; empty stdout = silent day, the watchdog pattern).
+
+Sources (all free, all anonymous):
+1. **LinkedIn guest jobs API** — `jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=<q>&location=&f_WT=2&f_TPR=r86400&start=0`. Remote filter (`f_WT=2`) + time filter (`f_TPR`). Returns ~10-25 fresh DE/DevOps roles per run.
+2. **LinkedIn company-page posts** — `/company/<slug>/` → `urn:li:activity:<id>` → `/feed/update/urn:li:activity:<id>/` `og:description` = full post body. Catches HR "WE'RE HIRING" posts.
+3. Remotive API (`remotive.com/api/remote-jobs?search=...`), HN "Who is hiring?" (Algolia `hn.algolia.com/api/v1/search?tags=story&query=who is hiring`, then `/items/<id>` for comments), career-ops ATS scan (`node scan.mjs --since 3`).
+
+**Daily-run pacing**: full run takes ~5 min (LinkedIn rate-limits; use ~1-2s sleeps between company-page/feed/update fetches). Run in background + wait. Reduce post fetches per company to keep it under cron timeouts.
+
+**Which searches actually work / don't for internships:**
+- The LinkedIn **guest API ignores the `intern`/`junior` keyword** — loose matching returns general DE/DevOps roles regardless of query. Don't trust it for internships; it finds new-grad/graduate if you add `new grad`, `graduate`, `entry` to the keyword set and widen `f_TPR` to 30d (r2592000), but results skew to standard roles.
+- **HR personal-profile posts** (recruiters posting on `/in/<handle>`) are NOT reachable by any free anonymous route even with a valid `li_at` cookie (Voyager returns "This post cannot be displayed"). See "LinkedIn anonymous scraping" below. Options: user pastes content, or user's own logged-in browser session.
+
+## LinkedIn anonymous scraping (verified free routes + the wall)
+
+Anonymous access IS possible for two data routes (contradicts the old "LinkedIn blocks everything" note):
+
+- **Guest jobs API** (recipe above). Parse: split HTML on `base-search-card--link` (NOT `base-search-card` — too shallow a split cuts the real segment mid-card), then per segment: title from `<span class="sr-only">`, company from `hidden-nested-link"[^>]*>\s*([^<]+?)\s*</a>` (its TEXT, not href — href is a country-prefixed URL), location from `job-search-card__location">`, URL from `href="https://www.linkedin.com/jobs/view/[^"]*"` minus `?position=...` suffix.
+- **Company-page posts**: fetch company page → extract `urn:li:activity:<id>` ids (dedupe) → fetch `/feed/update/urn:li:activity:<id>/` → `og:description` meta = full body, `og:title` = title. Filter hard for hiring language (most company posts are marketing, not jobs).
+- **Personal-profile posts are the wall**: `/posts/<handle>_...` returns HTTP 200 but is the `d_registration-cold-join` signup page, zero content. Even with valid `li_at` + JSESSIONID (from `/feed` session) hitting Voyager `voyager/api/feed/updates/urn%3Ali%3Aactivity%3A<id>` (with `Csrf-Token: <JSESSIONID>` header) returns 200 but `"This post cannot be displayed"`. LinkedIn serves personal-post bodies ONLY to a real signed-in browser session. Free automated fallback (camoufox/Playwright) requires user-namespace sandboxing the container blocks (see pitfall).
 
 1. Discovery: `web_search("site:reddit.com/r/hermesagent <topic>")` works from this box (ddgs live). Arctic-Shift CANNOT discover old threads: `after=` pagination 400s, `limit=200` 400s (use 100), big subs (cscareerquestions) 422. Only the freshest ~100 posts per sub are reachable — older threads must come from web_search, then fetch by ID.
 2. Fetch post + comments via Arctic-Shift by ID (`/posts/ids?ids=` + `/comments/tree?link_id=`).

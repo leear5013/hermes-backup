@@ -79,3 +79,30 @@ See `references/linkedin-anonymous-routes.md` (also saved under open-source-api-
 - career-ops scan output mixes all seniority levels; always exclude senior keywords.
 - Old skill notes saying "LinkedIn blocks ALL anonymous access" are OUTDATED — the
   guest API, company pages and activity permalinks work; re-verify before relying.
+- A `li_at` cookie DOES remove the login wall on personal-profile post permalinks, but
+  the authed page's og: tags are blank and the post text is NOT in the initial HTML
+  (it loads via client-side XHR / Voyager). Simple regex-over-`commentary` does NOT
+  extract it (those hits are schema definitions, not the post).
+- **Voyager API — the definitive wall (2026-08):** `li_at` + a FRESH `JSESSIONID`
+  (from a cookie-jar fetch of `https://www.linkedin.com/feed/`) sent as BOTH the
+  `JSESSIONID` cookie AND the `Csrf-Token` header returns HTTP 200 from
+  `/voyager/api/feed/updates/urn%3Ali%3Aactivity%3A<id>` — but the payload is
+  `"This post cannot be displayed"` for personal-profile posts from a datacenter IP.
+  The content is gated behind browser-context verification; cookies alone are NOT
+  enough. Real options: real-browser automation (camoufox) or user copy-paste.
+- **LinkedIn guest API IGNORES the `intern` keyword** — `keywords=data engineer intern`
+  returns ordinary Data Engineer roles (loose matching). Internships only surface by
+  filtering client-side (`intern|trainee|new grad|skillbridge` in the title) over
+  broader windows (`f_TPR=r604800`/`r2592000`); they arrive in waves (e.g. TikTok /
+  ByteDance "2027 Start" graduate postings cluster in late summer).
+- **camoufox setup** (for the real-browser route to personal posts): install into the
+  venv, `HOME=/opt/work/.home` MUST be the same for `camoufox fetch` AND launch
+  (browser lives in `$HOME/.cache/camoufox`); correct API is
+  `Camoufox(persistent_context=True, ...)` — `user_data_dir` as a top-level arg
+  raises TypeError. Details in `references/linkedin-personal-posts-voyager.md`.
+
+## Working style with this user (Hesham)
+- Do NOT stop between steps to ask "ok?" / "continue?" — batch multiple tool calls per
+  turn, use background processes + `process wait`, and return ONLY the final result.
+  He has explicitly called out one-step-per-turn prompting as exhausting. Run the
+  whole scan/verify/fix loop to completion before replying.
