@@ -710,14 +710,14 @@
     "created_by": null,
     "last_patched_at": null,
     "last_reused_patch_generation": 0,
-    "last_used_at": "2026-08-08T13:28:29.173649+00:00",
-    "last_viewed_at": "2026-08-08T13:28:29.169690+00:00",
+    "last_used_at": "2026-08-20T17:41:42.474489+00:00",
+    "last_viewed_at": "2026-08-20T17:41:42.466031+00:00",
     "patch_count": 0,
     "patch_generation": 0,
     "pinned": false,
     "state": "active",
-    "use_count": 1,
-    "view_count": 1
+    "use_count": 2,
+    "view_count": 2
   },
   "hermes-stalling-fix": {
     "archived_at": null,
@@ -1175,14 +1175,14 @@
     "created_by": null,
     "last_patched_at": null,
     "last_reused_patch_generation": 0,
-    "last_used_at": "2026-08-18T01:05:54.926501+00:00",
-    "last_viewed_at": "2026-08-18T01:05:54.905704+00:00",
+    "last_used_at": "2026-08-20T17:46:25.094421+00:00",
+    "last_viewed_at": "2026-08-20T17:46:25.065850+00:00",
     "patch_count": 0,
     "patch_generation": 0,
     "pinned": false,
     "state": "active",
-    "use_count": 9,
-    "view_count": 9
+    "use_count": 11,
+    "view_count": 11
   },
   "reddit-fetch": {
     "archived_at": null,
@@ -1190,14 +1190,29 @@
     "created_by": null,
     "last_patched_at": null,
     "last_reused_patch_generation": 0,
-    "last_used_at": "2026-08-18T01:05:54.932218+00:00",
-    "last_viewed_at": "2026-08-18T01:05:54.911941+00:00",
+    "last_used_at": "2026-08-20T17:46:25.108143+00:00",
+    "last_viewed_at": "2026-08-20T17:46:25.080168+00:00",
     "patch_count": 0,
     "patch_generation": 0,
     "pinned": false,
     "state": "active",
-    "use_count": 3,
-    "view_count": 3
+    "use_count": 5,
+    "view_count": 5
+  },
+  "reddit-reader": {
+    "archived_at": null,
+    "created_at": "2026-08-20T17:55:58.499438+00:00",
+    "created_by": null,
+    "last_patched_at": null,
+    "last_reused_patch_generation": 0,
+    "last_used_at": "2026-08-20T17:55:58.504823+00:00",
+    "last_viewed_at": "2026-08-20T17:55:58.499454+00:00",
+    "patch_count": 0,
+    "patch_generation": 0,
+    "pinned": false,
+    "state": "active",
+    "use_count": 1,
+    "view_count": 1
   },
   "reddit-research": {
     "archived_at": null,
