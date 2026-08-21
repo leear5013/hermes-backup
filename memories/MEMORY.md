@@ -1,21 +1,27 @@
 User: AI/LLM enthusiast (Hermes, DeepSeek, opencode). Dual-mode SOUL.md; honest 'what is knowable' answers; real user opinions over marketing. Real-time status updates during background tasks — silence unacceptable. Interested in DE/DevOps hackathons.
 §
-Auth: /data/.git-credentials x-access-token (Bearer only; 'token' 401s; GH search 30/min); state.db redacted pre-push
+Git auth: /data/.git-credentials x-access-token (Bearer only; 'token' 401s); state.db redacted pre-push.
 §
 Hermes on Railway: /opt/venv/bin/{python,hermes}; gateway pkgs via /opt/venv/bin/pip. Web search LIVE (ddgs).
 §
-nm-vmess:// CRACKED (NetMod): AES-128-ECB try-loop; key0 <n3t5yn4^n3tm0d> wins. Decryptor in vpn-config-decryption skill.
+nm-vmess (NetMod): AES-128-ECB; key0 <n3t5yn4^n3tm0d>. Decryptor in vpn-config-decryption skill.
 §
-Storage (HARD rule, re-emphasized 2026-08-18): NOTHING heavy in /data (500MB cap). Installs/caches/browsers/venvs → /opt/work or /opt/venv. Redirect npm cache + PLAYWRIGHT_BROWSERS_PATH=/opt/work/.pw-browsers. Only tiny config/scripts in /data/.hermes/.
+Storage HARD: /data 434MB cap; FULL=gateway dies; heavy→/opt/work; forbid subagents writing /data
 §
-Egypt ISP: 0% quota blocks ALL non-whitelisted dests (gov only). VLESS sakura.proxy.rlwy.net:14210 needs SNI=speedtest.net; VPN app=Karing. Do NOT save quota-bypass techniques (user instruction).
+Egypt ISP: 0% quota blocks non-whitelisted dests; carrier caches ignore TTL. Don't save bypass techniques.
 §
-RasdAgent decrypt bot: /opt/npvt-decrypt-bot/bot.py + PythonAnywhere webhook (leear5013/rasdagent-decrypt-bot); configs + proxy links; token SEPARATE from gateway (else 409).
+RasdAgent bot: /opt/npvt-decrypt-bot/bot.py + PythonAnywhere webhook; separate token else 409.
 §
-Freebuff=Codebuff free tier (report /opt/work/freebuff-security-report.md). USER LIMITED TIER (Egypt) → coerced mimo, NOT deepseek. Not worth it for him.
+Security audits: authorized private bounties OK (Babbel 08-21); NO modded/crack builds or bypass abuse — repro-step PoCs only; report at /opt/work/babbel-audit/
 §
-LinkedIn personal HR posts unreadable on box (curl/cookie/Voyager='cannot be displayed'; NO browser launches — unshare EACCES+seccomp). 9Router=his Railway proxy (pw 123456) bridging orcarouter/free→deepseek; admin key≠/v1 inference key. Hermes context fix: model.context_length (+custom_providers[].context_length), NOT context/max_context; gateway needs Railway restart.
+9Router=his Railway proxy (orcarouter/free→deepseek; admin key≠/v1 key).
 §
-When stuck: Reddit first (site:reddit.com via web_search + Arctic-Shift). Prefers REAL research + clever/smart non-rigid solutions (called a rigid approach "trashy!!" 08-18); rejects fragile scaffolding.
+When stuck: Reddit-first research; prefers clever non-rigid solutions (called a rigid approach "trashy!!" 08-18); rejects fragile scaffolding.
 §
 USER RULE (2026-08-18): Do NOT wait for 'ok/continue' between steps — batch multi tool calls per turn, background+wait loops, return ONLY final results. Tired of one-step-per-turn prompting.
+§
+Reddit skill (/data/.hermes/skills/reddit) is USER-OWNED (built 08-21 at his request) — curator writes refused until he runs `hermes curator adopt reddit`. Validated but unsaved there: reddit-top pipeline = RSS discovery → ArcticShift comment counts (limit≤100, paginate before=<oldest_ts>, size→400) → rank by reach.
+§
+Skill-library preference: wants MEGA class-level skills (rich SKILL.md + references/) over many narrow one-offs; consolidate overlapping skills on sight.
+§
+FrontWar PWA (his OpenFront fork): LIVE=leear5013.github.io/frontwar2/ (old /frontwar/ poisoned). Src=/opt/work/frontwar2. Worker needs ABSOLUTE asset URLs via sync postMessage; SW v2 network-first; versioned bundles. Stale-JS check: error line numbers vs bundle.
