@@ -35,8 +35,8 @@ npx esbuild src/client/Main.ts --bundle --outfile=<pwa>/src/of_client.js \
   --loader:.css=css --loader:.png=dataurl --loader:.svg=dataurl \
   --loader:.woff2=file --loader:.woff=file --loader:.mp3=file --loader:.json=json \
   --external:tailwindcss \
-  --define:process.env.GAME_ENV='"prod"' --define:process.env.API_DOMAIN='""' \
-  --define:'import.meta.env.MODE'='"production"' \
+  --define:process.env.GAME_ENV='\"prod\"' --define:process.env.API_DOMAIN='\"\"' \
+  --define:'import.meta.env.MODE'='\"production\"' \
   --define:'import.meta.env.PROD'=true --define:'import.meta.env.DEV'=false \
   --log-limit=0
 ```
@@ -189,11 +189,7 @@ User instruction that works: close PWA fully (app switcher), reopen, let it
 self-reload once.
 
 ## 13. CRITICAL: loadJsonFromUrl MUST also use cache-bypass (discovered 2026-08-21)
-The deployed bundle's `loadJsonFromUrl` method **lacked** the `cache: "reload"`
-patch that `loadBinaryFromUrl` had. This meant if the SW or HTTP cache had a
-stale 404 for the manifest, the JSON loader would fail silently (no retry),
-while the binary loader would recover. Manifest fetches are SMALL and CRITICAL
-— they must always use the same cache-bypass + retry pattern as binary loads.
+The deployed bundle's `loadJsonFromUrl` method **lacked** the `cache: "reload"` patch that `loadBinaryFromUrl` had. This meant if the SW or HTTP cache had a stale 404 for the manifest, the JSON loader would fail silently (no retry), while the binary loader would recover. Manifest fetches are SMALL and CRITICAL — they must always use the same cache-bypass + retry pattern as binary loads.
 
 Patch to apply in the bundle (search for `async loadJsonFromUrl`):
 ```js
@@ -214,3 +210,61 @@ This patch was missing from the deployed `frontwar2` bundle and caused the
 user's fresh-device failure ("Failed to load ./maps/world/manifest.json" at
 `loadJsonFromUrl` line 26994). After adding it, both loaders have identical
 cache-bypass + retry logic.
+
+## 14. CRITICAL: Asset manifest values MUST be ABSOLUTE URLs, not relative (discovered 2026-08-21)
+The upstream's `buildAssetUrl()` falls back to `/${path}` for missing manifest entries, and even when present, relative values like `./maps/world/manifest.json` are used verbatim in fetches. Under a subpath (`/frontwar2/`) with SW caching, these can resolve incorrectly or produce confusing error messages (the error shows the relative path even though the server returns 200 for the absolute path).
+
+The fix: when generating `BOOTSTRAP_CONFIG.assetManifest` in index.html, make every value an absolute URL via `new URL(relativePath, document.baseURI).href`. Do this for BOTH the main thread manifest AND the worker's postMessage manifest.
+
+Result: fetches always hit `https://leear5013.github.io/frontwar2/maps/world/manifest.json` (200), error messages show full URLs, and no ambiguity in SW/browser resolution.
+
+Regenerator script (`scripts/generate_asset_manifest.py`) updated to emit absolute URLs.
+
+## 15. CRITICAL: Carrier/CDN caches can make ALL server-side fixes invisible — FRESH PATH is the nuclear option (discovered 2026-08-21)
+GitHub Pages `max-age=600` + Egyptian carrier caches served users a weeks-old bundle even from "fresh browsers"; versioned query strings don't help because the cached HTML itself is what's stale. Fingerprint which bundle a remote user runs from their pasted error (`?v=` + line numbers) before debugging. If users still report old-code symptoms after one versioned redeploy, migrate to a FRESH PATH (new repo `/app2/`) — an uncached URL is the only guaranteed delivery. Worked: frontwar → frontwar2 migration fixed instantly what three correct fixes could not.
+
+### Error fingerprinting technique
+When a user pastes an error with a bundle hash (e.g., `of_client.js?v=38353c27f5:26994:17`), extract the hash and line number. Cross-reference against your deployed bundles — if it's an old hash, the user is running stale code regardless of what you deployed. Three correct fixes deployed to the same path failed to reach the user; a new repo (`frontwar2`) with fresh URLs delivered the fix on first try.
+
+### When to use fresh path migration
+- User reports same error after ≥1 correct deploy to same path
+- User's error line numbers match an OLD bundle hash
+- Carrier/CDN cache behavior is known to be aggressive (Egyptian ISP, corporate proxies)
+- You've verified the fix is live but user still sees old behavior
+
+## 16. Debugging checklist for "Failed to load ./maps/..." on PWA
+1. **Fingerprint the bundle** — extract `?v=` hash from user's error; verify it matches your latest deploy
+2. **Check manifest values** — are they absolute (`/app/maps/...`) or relative (`./maps/...`)? Must be absolute
+3. **Check both loaders** — `loadJsonFromUrl` AND `loadBinaryFromUrl` need cache-bypass + retry
+4. **Check worker handshake** — worker must receive absolute manifest via postMessage, not rely on its own build-time define
+5. **Check SW rules** — JSON manifests must be network-first; bump SW version on every deploy
+6. **If all above correct and user still fails** — migrate to fresh path (new repo/app2)
+7. **Production smoke test** — playwright against LIVE URL (not localhost): manifest fetch 200, map.bin 200, zero 4xx, no "?" icons
+
+## 17. CRITICAL: Prevent SW registration on game-specific paths (discovered 2026-08-21)
+Upstream games with multiplayer use `ClientEnv.workerPath(gameID)` to build URLs like `/w1/game/<id>`. When the PWA navigates to such a URL (via `history.pushState`), the `load` event fires again. If the SW registration code runs unconditionally on every `load`, it tries to register `./sw.js` **relative to the game path** (e.g., `/w1/game/<id>/sw.js` → 404, and logs "[FW] SW registration failed: A bad HTTP response code (404)").
+
+**Fix:** In index.html, make SW registration **path-aware**:
+```js
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    // Only register on the ROOT path — game URLs (/w1/game/*, /game/*) are not
+    // PWA scope and should not re-register the SW.
+    const isGamePath = window.location.pathname.startsWith("/w") ||
+                       window.location.pathname.startsWith("/game");
+    if (!isGamePath) {
+      navigator.serviceWorker.register("/frontwar2/sw.js?v=14").then(...);
+    }
+  });
+}
+```
+Key points:
+- Use **absolute SW URL** (`/frontwar2/sw.js`) not relative — survives any URL pushState
+- Gate on pathname: only register at the app root (`/` or `/frontwar2/`)
+- Bump SW version (`v=14`) on every deploy so old caches purge
+- The game's LocalServer flow (solo) does NOT need a game-specific SW scope
+
+## References
+- `scripts/generate_asset_manifest.py` — rebuilds BOOTSTRAP_CONFIG.assetManifest in index.html (run after adding any assets; see subpath pitfall above). Updated to emit absolute URLs.
+- `scripts/pwa_smoke_test.js` — production smoke test: broken images, 4xx/5xx, undefined custom elements, page errors at mobile or desktop viewport. Run against the LIVE URL after every deploy (localhost passes hide this entire bug class). Requires playwright; browsers at PLAYWRIGHT_BROWSERS_PATH=/opt/work/.pw-browsers.
+- Companion skill `pwa-static-hosting` carries the full incident case file (`references/frontwar-openfront-case.md`) — live URL, patch points, debugging recipes, and honest open-issue status.
