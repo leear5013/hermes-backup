@@ -1,0 +1,56 @@
+{
+  "jobs": [
+    {
+      "id": "6f459c8bf0b2",
+      "name": "hermes-backup-github",
+      "prompt": "Run the Hermes backup script to sync all SOUL.md, skills, memories, and config to the GitHub repo. Just execute it and report the result briefly.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "provider_snapshot": null,
+      "model_snapshot": null,
+      "base_url": null,
+      "script": "backup-cron-wrapper.sh",
+      "no_agent": true,
+      "monitor_script": null,
+      "monitor_url": null,
+      "monitor_state": null,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 720,
+        "display": "every 720m"
+      },
+      "schedule_display": "every 720m",
+      "repeat": {
+        "times": null,
+        "completed": 28
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-08-08T13:26:51.611784+00:00",
+      "next_run_at": "2026-08-22T22:55:07.239930+00:00",
+      "last_run_at": "2026-08-22T10:55:07.239930+00:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "874305381",
+        "chat_name": "hesham hatem",
+        "thread_id": null,
+        "user_id": "874305381"
+      },
+      "enabled_toolsets": [
+        "terminal"
+      ],
+      "workdir": null,
+      "fire_claim": null
+    }
+  ],
+  "updated_at": "2026-08-22T10:55:07.240118+00:00"
+}

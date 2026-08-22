@@ -242,7 +242,7 @@ When a user pastes an error with a bundle hash (e.g., `of_client.js?v=38353c27f5
 7. **Production smoke test** — playwright against LIVE URL (not localhost): manifest fetch 200, map.bin 200, zero 4xx, no "?" icons
 
 ## 17. CRITICAL: Prevent SW registration on game-specific paths (discovered 2026-08-21)
-Upstream games with multiplayer use `ClientEnv.workerPath(gameID)` to build URLs like `/w1/game/<id>`. When the PWA navigates to such a URL (via `history.pushState`), the `load` event fires again. If the SW registration code runs unconditionally on every `load`, it tries to register `./sw.js` **relative to the game path** (e.g., `/w1/game/<id>/sw.js` → 404, and logs "[FW] SW registration failed: A bad HTTP response code (404)").
+Upstream games with multiplayer use `ClientEnv.workerPath(gameID)` to build URLs like `/w1/game/<id>`. When the PWA navigates to such a URL (via `history.pushState`), the `load` event fires again. If the SW registration code runs unconditionally on every `load`, it tries to register `./sw.js` **relative to the game path** (e.g., `/w1/game/<id>/sw.js` → 404, and logs `"[FW] SW registration failed: A bad HTTP response code (404)"`).
 
 **Fix:** In index.html, make SW registration **path-aware**:
 ```js
@@ -263,6 +263,30 @@ Key points:
 - Gate on pathname: only register at the app root (`/` or `/frontwar2/`)
 - Bump SW version (`v=14`) on every deploy so old caches purge
 - The game's LocalServer flow (solo) does NOT need a game-specific SW scope
+
+## 18. CRITICAL: Singleplayer games MUST NOT update the URL via `workerPath` (discovered 2026-08-21)
+`Main.handleJoinLobby` calls `updateJoinUrlForShare(lobby.gameID)` for ANY non-public lobby — including singleplayer (`source: "singleplayer"`). That function rewrites `window.location.pathname` to `/w${workerIndex}/game/<id>` which triggers a navigation → reload → SW re-registration from the wrong base → WebSocket attempts to `wss://host/wX/lobbies` (404) → game dies.
+
+**Fix:** In `handleJoinLobby`, skip `updateJoinUrlForShare` when `lobby.source === "singleplayer"` (the local server doesn't need a shareable lobby URL). Search for:
+```ts
+if (lobby.source !== "public") {
+  this.updateJoinUrlForShare(lobby.gameID);
+}
+```
+Change to:
+```ts
+if (lobby.source !== "public" && lobby.source !== "singleplayer") {
+  this.updateJoinUrlForShare(lobby.gameID);
+}
+```
+
+## 19. CRITICAL: SW registration path MUST be absolute with explicit scope (discovered 2026-08-21)
+`navigator.serviceWorker.register("./sw.js")` is relative. When the singleplayer URL rewrite changes the page to `/wX/game/...`, a subsequent load event fires and the SW registers from THAT path, resolving to `/wX/game/sw.js` (404). Fix: use absolute path + explicit scope:
+```js
+navigator.serviceWorker.register("/frontwar2/sw.js?v=14",
+  { scope: "/frontwar2/" })
+```
+This ensures the SW always registers at the correct subpath regardless of current page URL.
 
 ## References
 - `scripts/generate_asset_manifest.py` — rebuilds BOOTSTRAP_CONFIG.assetManifest in index.html (run after adding any assets; see subpath pitfall above). Updated to emit absolute URLs.

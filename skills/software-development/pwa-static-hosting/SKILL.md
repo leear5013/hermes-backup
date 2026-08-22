@@ -122,3 +122,6 @@ registration, and one full user flow. Reproduce mobile bugs with
   points, debug transcripts, resolution status of each incident (worker
   manifest 404 class: RESOLVED via fresh-path migration; final map render on
   the user's device: still unconfirmed — WebGL layer, not the manifest bug).
+- `../pwa-build-deploy/references/2026-08-22-additional-pitfalls.md` — additional
+  pitfalls: singleplayer URL navigation fix, esbuild `process.env` polyfill gap,
+  Turnstile dependency in solo flow (open issue).

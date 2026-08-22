@@ -1,27 +1,19 @@
-User: AI/LLM enthusiast (Hermes, DeepSeek, opencode). Dual-mode SOUL.md; honest 'what is knowable' answers; real user opinions over marketing. Real-time status updates during background tasks — silence unacceptable. Interested in DE/DevOps hackathons.
-§
-Git auth: /data/.git-credentials x-access-token (Bearer only; 'token' 401s); state.db redacted pre-push.
-§
-Hermes on Railway: /opt/venv/bin/{python,hermes}; gateway pkgs via /opt/venv/bin/pip. Web search LIVE (ddgs).
-§
-nm-vmess (NetMod): AES-128-ECB; key0 <n3t5yn4^n3tm0d>. Decryptor in vpn-config-decryption skill.
-§
 Storage HARD: /data 434MB cap; FULL=gateway dies; heavy→/opt/work; forbid subagents writing /data
 §
 Egypt ISP: 0% quota blocks non-whitelisted dests; carrier caches ignore TTL. Don't save bypass techniques.
 §
-RasdAgent bot: /opt/npvt-decrypt-bot/bot.py + PythonAnywhere webhook; separate token else 409.
-§
 Security audits: authorized private bounties OK (Babbel 08-21); NO modded/crack builds or bypass abuse — repro-step PoCs only; report at /opt/work/babbel-audit/
-§
-9Router=his Railway proxy (orcarouter/free→deepseek; admin key≠/v1 key).
-§
-When stuck: Reddit-first research; prefers clever non-rigid solutions (called a rigid approach "trashy!!" 08-18); rejects fragile scaffolding.
-§
-USER RULE (2026-08-18): Do NOT wait for 'ok/continue' between steps — batch multi tool calls per turn, background+wait loops, return ONLY final results. Tired of one-step-per-turn prompting.
 §
 Reddit skill (/data/.hermes/skills/reddit) is USER-OWNED (built 08-21 at his request) — curator writes refused until he runs `hermes curator adopt reddit`. Validated but unsaved there: reddit-top pipeline = RSS discovery → ArcticShift comment counts (limit≤100, paginate before=<oldest_ts>, size→400) → rank by reach.
 §
-Skill-library preference: wants MEGA class-level skills (rich SKILL.md + references/) over many narrow one-offs; consolidate overlapping skills on sight.
+Skill-library: MEGA class-level skills (rich SKILL.md + references/) over narrow one-offs; consolidate overlapping on sight. Reddit mega-skill at /data/.hermes/skills/reddit/ is template.
 §
-FrontWar PWA (his OpenFront fork): LIVE=leear5013.github.io/frontwar2/ (old /frontwar/ poisoned). Src=/opt/work/frontwar2. Worker needs ABSOLUTE asset URLs via sync postMessage; SW v2 network-first; versioned bundles. Stale-JS check: error line numbers vs bundle.
+Communication: Terse approvals ('Ok','Go on','1','Continue')=proceed. No confirmation loops. Code first, ≤3 lines. Decisive single-shot solutions.
+§
+Research: Reddit-first (RSS>visible-browser). No .json/curl/headless/login. Reddit mega-skill=single source. Career-Ops cron declined; manual only.
+§
+Security audits: Authorized private bounties only (Babbel 08-21). Report+repro. NO modded builds/bypass abuse. PoCs only. Reports→/opt/work/babbel-audit/, /data/workspace/.
+§
+Egypt ISP: 0% quota blocks non-whitelisted; carrier caches ignore TTL. Fresh path (/app2/)=only guaranteed cache-bust. Never save bypasses.
+§
+FrontWar PWA (OpenFront fork): LIVE=leear5013.github.io/frontwar2/. Src=/opt/work/frontwar2. esbuild (Vite OOM 1GB cgroup). Tailwind v4 CLI. Subpath hosting, worker manifest via init message (absolute URLs), SW network-first JSON, versioned caches, carrier stale caches (fresh path = only guarantee). Worker: esbuild --format=iife --global-name=GameWorker, createGameWorker→new Worker(). Fixed: manifest absolute URLs, worker handshake, createGameWorker loads separate bundle.

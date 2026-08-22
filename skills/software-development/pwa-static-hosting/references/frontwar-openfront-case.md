@@ -26,14 +26,15 @@ migration was the only thing that worked. Upstream clone: `/opt/work/openfront/`
 
 ## Exact patch points in the bundle (re-apply after any rebuild)
 1. `createGameWorker()` → replace dynamic import with
-   `new Worker("./src/game-worker.js?v=<hash>")` plus a synchronous
-   `postMessage({type:"asset-manifest", manifest:<absolute-URL entries>})`
-   immediately after construction.
+   `new Worker("./src/game-worker.js?v=<hash>")` plus include the **absolute
+   asset manifest in the `init` message** (not a separate postMessage after
+   `worker-ready` — the game can start before the handshake completes). The
+   `init` payload must carry `assetManifest: <absolute-URL entries>`.
 2. Worker `buildAssetUrl` → prefer absolute manifest entries before any baseUrl
    concatenation.
-3. Worker accepts `{type:"asset-manifest"}` messages into
-   `globalThis.__ASSET_MANIFEST__` (its build-time define is empty and it would
-   otherwise overwrite anything set on globalThis).
+3. Worker `init` handler → on `message.assetManifest`, set
+   `globalThis.__ASSET_MANIFEST__ = message.assetManifest` before creating the
+   `FetchGameMapLoader` (which captures the manifest at construction time).
 4. `loadJsonFromUrl` in `FetchGameMapLoader` (both main thread and worker) →
    add `cache: "reload"` first attempt + plain retry + second `cache: "reload"`
    retry before throwing. This patch was MISSING from the deployed bundle and
@@ -118,11 +119,71 @@ When a user pastes an error with a bundle hash (e.g., `of_client.js?v=38353c27f5
 - Carrier/CDN cache behavior is known to be aggressive (Egyptian ISP, corporate proxies)
 - You've verified the fix is live but user still sees old behavior
 
+## CRITICAL FIX (2026-08-21): SW registration path MUST be absolute with explicit scope
+`navigator.serviceWorker.register("./sw.js")` is relative. When the singleplayer URL rewrite changes the page to `/wX/game/...`, a subsequent load event fires and the SW registers from THAT path, resolving to `/wX/game/sw.js` (404). Fix: use absolute path + explicit scope:
+```js
+navigator.serviceWorker.register("/frontwar2/sw.js?v=14",
+  { scope: "/frontwar2/" })
+```
+This ensures the SW always registers at the correct subpath regardless of current page URL.
+
+## CRITICAL FIX (2026-08-21): Prevent SW registration on game-specific paths (discovered 2026-08-21)
+Upstream games with multiplayer use `ClientEnv.workerPath(gameID)` to build URLs like `/w1/game/<id>`. When the PWA navigates to such a URL (via `history.pushState`), the `load` event fires again. If the SW registration code runs unconditionally on every `load`, it tries to register `./sw.js` **relative to the game path** (e.g., `/w1/game/<id>/sw.js` → 404, and logs `"[FW] SW registration failed: A bad HTTP response code (404)"`).
+
+**Fix:** In index.html, make SW registration **path-aware**:
+```js
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    // Only register on the ROOT path — game URLs (/w1/game/*, /game/*) are not
+    // PWA scope and should not re-register the SW.
+    const isGamePath = window.location.pathname.startsWith("/w") ||
+                       window.location.pathname.startsWith("/game");
+    if (!isGamePath) {
+      navigator.serviceWorker.register("/frontwar2/sw.js?v=14").then(...);
+    }
+  });
+}
+```
+Key points:
+- Use **absolute SW URL** (`/frontwar2/sw.js`) not relative — survives any URL pushState
+- Gate on pathname: only register at the app root (`/` or `/frontwar2/`)
+- Bump SW version (`v=14`) on every deploy so old caches purge
+- The game's LocalServer flow (solo) does NOT need a game-specific SW scope
+
+## CRITICAL FIX (2026-08-21): Singleplayer games MUST NOT update the URL via `workerPath`
+There are AT LEAST TWO places in the codebase that rewrite the browser URL for singleplayer games:
+
+### Point 1: `updateJoinUrlForShare` in `handleJoinLobby` (Main.ts)
+This was the initially discovered path. Fix:
+```ts
+if (lobby.source !== "public" && lobby.source !== "singleplayer") {
+  this.updateJoinUrlForShare(lobby.gameID);
+}
+```
+
+### Point 2: `lobbyHandle.join.then(...)` callback — THE PRIMARY CULPRIT
+This fires when the lobby join promise resolves and pushes state via:
+```ts
+history.pushState(null, "", `/${ClientEnv.workerPath(lobby.gameID)}/game/${lobby.gameID}?live`);
+```
+This is the code that actually navigates the browser to `/w1/game/<id>?live` on GitHub Pages, causing a 404. The `lobby` variable is available from the enclosing scope of the `joinLobby` call. Fix: guard the pushState:
+```ts
+this.lobbyHandle.join.then(() => {
+  // ... other setup ...
+  if (lobby.source !== "singleplayer") {
+    history.pushState(null, "", `/${ClientEnv.workerPath(lobby.gameID)}/game/${lobby.gameID}?live`);
+  }
+  this.currentUrl = window.location.href;
+});
+```
+
+**Diagnosis pattern:** When user reports "game is loading" hang OR "Connection error" with URL like `/w1/game/xxx?live` on GitHub Pages, the URL changed via `lobbyHandle.join.then(...)`, NOT `updateJoinUrlForShare`. Search the deployed bundle for ALL `workerPath` + `pushState` combinations — there are 13+ references.
+
 ## Debugging checklist for "Failed to load ./maps/..." on PWA
 1. **Fingerprint the bundle** — extract `?v=` hash from user's error; verify it matches your latest deploy
 2. **Check manifest values** — are they absolute (`/app/maps/...`) or relative (`./maps/...`)? Must be absolute
 3. **Check both loaders** — `loadJsonFromUrl` AND `loadBinaryFromUrl` need cache-bypass + retry
-4. **Check worker handshake** — worker must receive absolute manifest via postMessage, not rely on its own build-time define
+4. **Check worker handshake** — worker must receive absolute manifest via init message, not rely on its own build-time define
 5. **Check SW rules** — JSON manifests must be network-first; bump SW version on every deploy
 6. **If all above correct and user still fails** — migrate to fresh path (new repo/app2)
 7. **Production smoke test** — playwright against LIVE URL (not localhost): manifest fetch 200, map.bin 200, zero 4xx, no "?" icons

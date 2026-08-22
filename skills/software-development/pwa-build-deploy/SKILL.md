@@ -12,6 +12,7 @@ PWA → live on GitHub Pages (2026-08-21). Also applies to any SPA/game with a
 vite/esbuild toolchain.
 
 ## Core insight
+
 Never rebuild from scratch. Find the open-source upstream (check client bundle
 for shared signature strings vs a GitHub repo), fork it, rebrand, and re-host.
 AGPL upstreams require license + attribution — keep both.
@@ -66,6 +67,7 @@ AGPL upstreams require license + attribution — keep both.
    CDN propagation can 404 briefly — re-test before "fixing".
 
 ## Pitfalls (all hit for real)
+
 - vite build exit 137 on this box is cgroup memory, not flags. Go esbuild
   immediately; do not iterate heap sizes.
 - Unstyled app + duplicated navs + placeholder icons = Tailwind never compiled
@@ -78,13 +80,15 @@ AGPL upstreams require license + attribution — keep both.
   against their own script URL** (`/repo/src/worker.js`), not the page —
   `./maps/x` becomes `/repo/src/maps/x` (404). A build-time empty
   `__ASSET_MANIFEST__` define inside the worker also overwrites anything the
-  main thread set on globalThis. Full fix that survived production: (a) main
-  thread posts `{type:"asset-manifest", manifest}` **synchronously right after
-  `new Worker()`** (a ready-handshake can lose the race against the first
-  game-start message), with values made absolute via
-  `new URL(v, document.baseURI).href`; (b) worker stores it into
-  `globalThis.__ASSET_MANIFEST__` and its URL builder prefers absolute
-  manifest entries verbatim. Symptom: "Failed to load ./maps/world/manifest.json"
+  main thread set on globalThis. Full fix: (a) build the worker as a SEPARATE
+  bundle (esbuild `?worker&inline` → `GameWorker is not a constructor`);
+  load via `new Worker(new URL('./game-worker.js?v=<hash>', import.meta.url))`;
+  (b) include `assetManifest` (absolute URLs via `new URL(v, document.baseURI)`)
+  **directly in the init message payload** so it's available before
+  `FetchGameMapLoader` runs — a `worker-ready` → `asset-manifest` postMessage
+  handshake is RACY and loses to the first game-start message; (c) worker's
+  `init` handler sets `globalThis.__ASSET_MANIFEST__` before
+  `createGameRunner()`. Symptom: "Failed to load ./maps/world/manifest.json"
   while curl of the same URL returns 200.
 - **Installed-device SW cache poisoning outlives every server-side fix.**
   Cache-first without revalidation caches 404 responses forever, and iOS HTTP-
@@ -139,11 +143,31 @@ AGPL upstreams require license + attribution — keep both.
   against the LIVE URL — disk checks cannot catch this class of bug.
   Regenerator script: `scripts/generate_asset_manifest.py` (writes the
   BOOTSTRAP_CONFIG block into index.html; re-run after adding assets).
-- Multiplayer lobby routes (`/lobbies` WS, `/api/*`) need upstream's Node game
-  server; static hosting = solo mode only. Say so up front. Cosmetic client
+## Turnstile Dependency in Solo Flow
+
+OpenFront's `Main.ts:1282` `getTurnstileToken()` awaits `window.turnstile` for
+10s then throws. **Under static hosting the Turnstile script 404s, so this
+always throws** — and since `handleJoinLobby` → `userAuth` → `getTurnstileToken`
+runs BEFORE the local server starts, the game **hangs on "game is loading"
+forever** (the Turnstile timeout is the root cause; the "Failed to load
+manifest" error is a downstream symptom that may never even appear).
+
+**Fix to bundle-patch:** After the 10s poll loop, when `window.turnstile` is
+still undefined, resolve with a mock token instead of throwing:
+```js
+if (typeof window.turnstile === "undefined") {
+  return { token: "pwa-local-token", createdAt: Date.now() };
+}
+```
+
+This lets `userAuth()` proceed, `isLocal()` returns true for Singleplayer,
+and the LocalServer starts. The mock token is never sent to a real backend
+(solo is self-hosted on the client).** Cosmetic client
   errors (cosmetics/news/streams/auth fetch failures) are the same class —
   point `jwtAudience` at `"localhost"` so they fail fast instead of DNS-
   hanging on `api.null`.
+- **CRITICAL: URL navigation for singleplayer games hits MULTIPLE code paths.** The upstream codebase rewrites `location.href` to `/w1/game/<id>?live` in at least 3 places: (1) `updateJoinUrlForShare` in `handleJoinLobby`, (2) `lobbyHandle.join.then(...)` callback (the MAIN culprit — fires after game joins, pushes state with `?live`), and (3) `viewGame()` in profile components. Patching only `updateJoinUrlForShare` is NOT enough — the `lobbyHandle.join.then(...)` callback is what actually navigates the browser to `/w1/game/...` for singleplayer. Both (1) and (2) must be guarded with `if (lobby.source !== "singleplayer")`. See `references/2026-08-22-additional-pitfalls.md` for exact code.
+- **Mobile scroll lock — downstream of the same hosting choices that hide the earlier bugs.** Upstream index.html ships `viewport: maximum-scale=1.0, user-scalable=no` + `html,body {touch-action: manipulation; overscroll-behavior: none}` + `class="overflow-hidden"` on the flex shell. On iOS this freezes page scroll inside modals (user reported "scrolling issues on some sites from phone"). Fix that worked live (2026-08-22): remove `maximum-scale`/`user-scalable` from viewport (leave `width=device-width, initial-scale=1.0, viewport-fit=cover`), switch `touch-action` to `auto` / `overscroll-behavior-y: auto` + `-webkit-overflow-scrolling: touch`, and force `.page-content {overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain}`. Mirror the fix to `404.html` (GH Pages SPA fallback). Don't re-add `user-scalable=no` — it breaks iOS a11y and scroll.
 - Subagents default to writing scratch files in their cwd. On this box that is
   /data (~500MB cap) — one agent filling it kills the gateway AND all sibling
   agents mid-run (happened for real). Always put "write ONLY to /tmp and
@@ -155,9 +179,12 @@ AGPL upstreams require license + attribution — keep both.
   invocations, Tailwind v4 CLI, shell template checklist, GitHub API deploy
   sequence, playwright verification snippets, OpenFront→FrontWar worked example,
   worker postMessage handshake + SW cache-poisoning defenses.
+- `references/2026-08-22-additional-pitfalls.md` — additional pitfalls: singleplayer
+  URL navigation fix, esbuild `process.env` polyfill gap, Turnstile dependency
+  in solo flow (open issue), **worker manifest handshake race fix**.
 - `scripts/generate_asset_manifest.py` — rebuilds BOOTSTRAP_CONFIG.assetManifest
   in index.html (run after adding any assets; see subpath pitfall above).
-- `scripts/pwa_smoke_test.js` — production smoke test: broken images, 4xx/5xx,
+- `scripts/pwa_smoke_test.py` — production smoke test: broken images, 4xx/5xx,
   undefined custom elements, page errors at mobile or desktop viewport. Run
   against the LIVE URL after every deploy (localhost passes hide this entire
   bug class). Requires playwright; browsers at
