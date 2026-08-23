@@ -1250,14 +1250,14 @@
     "created_by": null,
     "last_patched_at": null,
     "last_reused_patch_generation": 0,
-    "last_used_at": "2026-08-20T17:46:25.108143+00:00",
-    "last_viewed_at": "2026-08-20T17:46:25.080168+00:00",
+    "last_used_at": "2026-08-23T14:32:41.966273+00:00",
+    "last_viewed_at": "2026-08-23T14:32:41.955919+00:00",
     "patch_count": 0,
     "patch_generation": 0,
     "pinned": false,
     "state": "active",
-    "use_count": 5,
-    "view_count": 5
+    "use_count": 6,
+    "view_count": 6
   },
   "reddit-reader": {
     "archived_at": null,
@@ -1550,14 +1550,14 @@
     "created_by": null,
     "last_patched_at": null,
     "last_reused_patch_generation": 0,
-    "last_used_at": "2026-08-19T10:40:23.786926+00:00",
-    "last_viewed_at": "2026-08-19T10:40:23.782382+00:00",
+    "last_used_at": "2026-08-23T14:33:16.197347+00:00",
+    "last_viewed_at": "2026-08-23T14:33:16.192812+00:00",
     "patch_count": 0,
     "patch_generation": 0,
     "pinned": false,
     "state": "active",
-    "use_count": 9,
-    "view_count": 9
+    "use_count": 11,
+    "view_count": 11
   },
   "weekly-review-planning": {
     "archived_at": null,
