@@ -25,15 +25,15 @@
       "schedule_display": "every 720m",
       "repeat": {
         "times": null,
-        "completed": 32
+        "completed": 33
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-08-08T13:26:51.611784+00:00",
-      "next_run_at": "2026-08-25T10:57:25.229828+00:00",
-      "last_run_at": "2026-08-24T10:57:09.636264+00:00",
+      "next_run_at": "2026-08-25T22:57:53.576147+00:00",
+      "last_run_at": "2026-08-24T22:57:37.941580+00:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -50,7 +50,56 @@
       ],
       "workdir": null,
       "fire_claim": null
+    },
+    {
+      "id": "1c64dc809a6e",
+      "name": "vault-nightly-commit",
+      "prompt": "Silent nightly vault commit",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "provider_snapshot": null,
+      "model_snapshot": null,
+      "base_url": null,
+      "script": "vault-commit.sh",
+      "no_agent": true,
+      "monitor_script": null,
+      "monitor_url": null,
+      "monitor_state": null,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 3 * * *",
+        "display": "0 3 * * *"
+      },
+      "schedule_display": "0 3 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 1
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-08-24T23:27:46.716368+00:00",
+      "next_run_at": "2026-08-26T03:00:00+00:00",
+      "last_run_at": "2026-08-25T03:00:14.874658+00:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "874305381",
+        "chat_name": "hesham hatem",
+        "thread_id": null,
+        "user_id": "874305381"
+      },
+      "enabled_toolsets": null,
+      "workdir": null,
+      "fire_claim": null
     }
   ],
-  "updated_at": "2026-08-24T22:57:25.230019+00:00"
+  "updated_at": "2026-08-25T10:57:53.576304+00:00"
 }

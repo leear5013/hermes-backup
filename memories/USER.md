@@ -8,6 +8,6 @@ Has HuggingFace (OmniRoute/cookie). Prefers summaries. CV needs impact-framing o
 §
 Android tunnel/VPN configs (NPV Tunnel, NetMod, HTTP Custom; vmess://, nm-vmess://; nm-vmess=NetMod variant).
 §
-Security: friendly audits of AI products; open-source repo=truth; wants ME to run live probes; holds line on token-bypass exploitation; OSINT wants legit contact routes, not bare refusals.
+Security: authorized private bounties OK; wants ME to run live probes; holds line on token-bypass exploitation; private-collab = standing authorization, no re-ask within scope; OSINT wants legit contact routes.
 §
 Job hunt (2026-08): DE+DevOps intern/junior, remote worldwide from Egypt; FULLY-FREE tools only; wants LinkedIn incl. post-only roles. LinkedIn guest API+company pages OK anonymously; profiles 999-blocked; JobSpy works. career-ops daily cron → TG.
