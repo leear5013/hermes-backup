@@ -51,6 +51,10 @@ version: 1.0.0
 ## Owner / site-legitimacy OSINT (when asked "who runs this APK/download site?")
 The same risk-verification applies to Arabic modded-APK sites (e.g. mobiltna.com — "موبايلاتنا"). Legit analysis in one pass:
 
+...
+## References
+- `references/free-streaming-community-status.md` — current community status of free streaming sites (Aug 2026, from r/FREEMEDIAHECKYEAH + r/Piracy)
+
 1. **Fetch the site, extract every contact hint**: About (`/about`, "من نحن"), Contact ("اتصل بنا"), Privacy. Strip scripts/styles/WordPress theme boilerplate, then look for `t.me/...`, Facebook, email, and the site's own claim ("© 2026", company-ish name like "موبايلاتنا للتقنية").
 2. **RDAP instead of whois** (often uninstalled on servers): `curl -sL https://rdap.org/domain/<domain>` — registrar, creation/expiry dates, status, nameservers. `rdap.verisign.com` redirect is normal for .com.
 3. **Read the signals, don't chase the redacted record**: registrar NameCheap/Cloudflare DNS/1–2yr-old .com + a "modded APK" catalog + no Facebook + generic contact = anonymous small operator who hides *by design* (piracy liability). Cloudflare DNS also hides the origin IP — deeper tracing is a dead end without a legal take-down.
