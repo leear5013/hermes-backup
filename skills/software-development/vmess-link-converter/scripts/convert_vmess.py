@@ -100,7 +100,20 @@ def to_base64_vmess(config: dict) -> str:
     s = json.dumps(config, separators=(',', ':'))
     return "vmess://" + base64.b64encode(s.encode('utf-8')).decode('utf-8')
 
-def to_plain_uri(config: dict) -> str:
+def is_insecure_needed(config: dict) -> bool:
+    # If host/sni differs from address, or if explicitly configured
+    if config.get("insecure") in [True, "1", 1] or config.get("allowInsecure") in [True, "1", 1]:
+        return True
+    add = config.get("add", "")
+    sni = config.get("sni", "")
+    host = config.get("host", "")
+    if sni and sni != add:
+        return True
+    if host and host != add:
+        return True
+    return False
+
+def to_plain_uri(config: dict, insecure: bool = None) -> str:
     params = {}
     if config.get("net"): params["type"] = config["net"]
     if config.get("tls"): params["security"] = config["tls"]
@@ -108,12 +121,18 @@ def to_plain_uri(config: dict) -> str:
     if config.get("host"): params["host"] = config["host"]
     if config.get("sni"): params["sni"] = config["sni"]
     if config.get("fp"): params["fp"] = config["fp"]
+    
+    use_insecure = insecure if insecure is not None else is_insecure_needed(config)
+    if use_insecure and config.get("tls") in ["tls", "reality"]:
+        params["insecure"] = "1"
+        
     query = urllib.parse.urlencode(params)
     remark = urllib.parse.quote(config.get("ps", ""))
     return f"vmess://{config.get('id', '')}@{config.get('add', '')}:{config.get('port', 443)}?{query}#{remark}"
 
-def to_shadowrocket(config: dict) -> str:
+def to_shadowrocket(config: dict, insecure: bool = None) -> str:
     userinfo = base64.b64encode(f"{config.get('scy', 'auto')}:{config.get('id', '')}@{config.get('add', '')}:{config.get('port', 443)}".encode()).decode()
+    use_insecure = insecure if insecure is not None else is_insecure_needed(config)
     params = {
         "remarks": config.get("ps", ""),
         "obfsParam": config.get("host", ""),
@@ -121,7 +140,7 @@ def to_shadowrocket(config: dict) -> str:
         "obfs": "websocket" if config.get("net") == "ws" else config.get("net", "none"),
         "tls": "1" if config.get("tls") in ["tls", "reality"] else "0",
         "peer": config.get("sni", ""),
-        "allowInsecure": "0"
+        "allowInsecure": "1" if use_insecure else "0"
     }
     return f"vmess://{userinfo}?{urllib.parse.urlencode(params)}"
 
@@ -130,6 +149,7 @@ def main():
     parser.add_argument("input", help="VMess link (nm-vmess://, vmess://, or JSON string)")
     parser.add_argument("--format", choices=["all", "base64", "uri", "shadowrocket", "json", "nm-vmess"], default="all", help="Output format")
     parser.add_argument("--key", help="AES key for nm-vmess decryption/encryption (optional)")
+    parser.add_argument("--insecure", action="store_true", default=None, help="Force allowInsecure=1")
     parser.add_argument("-o", "--output", help="Write result to file instead of stdout")
     args = parser.parse_args()
 
@@ -147,17 +167,17 @@ def main():
         output_lines.append("\n=== Standard Base64 VMess Link (v2rayNG / V2RayN) ===")
         output_lines.append(to_base64_vmess(config))
         output_lines.append("\n=== Plain URI Format (URL Scheme) ===")
-        output_lines.append(to_plain_uri(config))
+        output_lines.append(to_plain_uri(config, insecure=args.insecure))
         output_lines.append("\n=== Shadowrocket Format ===")
-        output_lines.append(to_shadowrocket(config))
+        output_lines.append(to_shadowrocket(config, insecure=args.insecure))
         output_lines.append("\n=== Re-encrypted NetMod Link (nm-vmess://) ===")
         output_lines.append(encrypt_nm_vmess(config, key=key_bytes or NETMOD_KEYS[0]))
     elif args.format == "base64":
         output_lines.append(to_base64_vmess(config))
     elif args.format == "uri":
-        output_lines.append(to_plain_uri(config))
+        output_lines.append(to_plain_uri(config, insecure=args.insecure))
     elif args.format == "shadowrocket":
-        output_lines.append(to_shadowrocket(config))
+        output_lines.append(to_shadowrocket(config, insecure=args.insecure))
     elif args.format == "json":
         output_lines.append(json.dumps(config, indent=2))
     elif args.format == "nm-vmess":
