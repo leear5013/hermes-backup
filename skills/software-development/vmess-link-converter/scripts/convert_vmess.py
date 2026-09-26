@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Standalone VMess Link Converter and Decryptor.
+Standalone VMess & VLESS Link Converter and Decryptor.
 Supports:
-  - nm-vmess:// (NetMod AES-128-ECB)
+  - nm-vmess://, nm-vless:// (NetMod AES-128-ECB)
   - vmess:// (Base64 JSON / Plain URI / Shadowrocket)
+  - vless:// (Standard Xray/V2Ray URI)
   - Raw JSON
 Uses Python's standard cryptography library (no external pycryptodome required).
 """
@@ -34,7 +35,7 @@ def aes_ecb_encrypt(plaintext: bytes, key: bytes) -> bytes:
     encryptor = cipher.encryptor()
     return encryptor.update(padded) + encryptor.finalize()
 
-def decrypt_nm_vmess(payload_b64: str, explicit_key: bytes = None) -> dict:
+def decrypt_nm_payload(payload_b64: str, explicit_key: bytes = None):
     raw = base64.b64decode(payload_b64)
     keys_to_try = [explicit_key] if explicit_key else NETMOD_KEYS
     for key in keys_to_try:
@@ -46,62 +47,16 @@ def decrypt_nm_vmess(payload_b64: str, explicit_key: bytes = None) -> dict:
             if 1 <= pad_len <= 16 and dec[-pad_len:] == bytes([pad_len]) * pad_len:
                 dec = dec[:-pad_len]
             txt = dec.decode('utf-8')
-            return json.loads(txt)
+            txt_clean = txt.strip()
+            if txt_clean.startswith("{") and txt_clean.endswith("}"):
+                return json.loads(txt_clean), "json", key
+            else:
+                return txt_clean, "uri", key
         except Exception:
             continue
-    raise ValueError("Failed to decrypt nm-vmess payload with known NetMod keys.")
-
-def encrypt_nm_vmess(config: dict, key: bytes = NETMOD_KEYS[0]) -> str:
-    raw_json = json.dumps(config, separators=(',', ':')).encode('utf-8')
-    enc = aes_ecb_encrypt(raw_json, key)
-    return "nm-vmess://" + base64.b64encode(enc).decode('utf-8')
-
-def parse_vmess(input_str: str, key: bytes = None) -> dict:
-    s = input_str.strip()
-    if s.startswith("nm-vmess://"):
-        return decrypt_nm_vmess(s[len("nm-vmess://"):], explicit_key=key)
-    elif s.startswith("vmess://"):
-        raw = s[len("vmess://"):]
-        if "@" in raw or "?" in raw:
-            parsed = urllib.parse.urlparse(s)
-            user_info = parsed.username or ""
-            host = parsed.hostname or ""
-            port = str(parsed.port or 443)
-            query = urllib.parse.parse_qs(parsed.query)
-            remark = urllib.parse.unquote(parsed.fragment or "")
-            return {
-                "v": "2",
-                "ps": remark,
-                "add": host,
-                "port": port,
-                "id": user_info,
-                "aid": "0",
-                "scy": query.get("security", ["auto"])[0],
-                "net": query.get("type", ["tcp"])[0],
-                "type": "none",
-                "host": query.get("host", [""])[0],
-                "path": query.get("path", [""])[0],
-                "tls": query.get("security", [""])[0] if query.get("security", [""])[0] in ["tls", "reality"] else "",
-                "sni": query.get("sni", [""])[0],
-                "fp": query.get("fp", [""])[0]
-            }
-        else:
-            rem = len(raw) % 4
-            if rem > 0:
-                raw += "=" * (4 - rem)
-            dec = base64.b64decode(raw).decode('utf-8')
-            return json.loads(dec)
-    elif s.startswith("{") and s.endswith("}"):
-        return json.loads(s)
-    else:
-        raise ValueError("Unrecognized VMess format.")
-
-def to_base64_vmess(config: dict) -> str:
-    s = json.dumps(config, separators=(',', ':'))
-    return "vmess://" + base64.b64encode(s.encode('utf-8')).decode('utf-8')
+    raise ValueError("Failed to decrypt NetMod payload with known NetMod keys.")
 
 def is_insecure_needed(config: dict) -> bool:
-    # If host/sni differs from address, or if explicitly configured
     if config.get("insecure") in [True, "1", 1] or config.get("allowInsecure") in [True, "1", 1]:
         return True
     add = config.get("add", "")
@@ -112,6 +67,101 @@ def is_insecure_needed(config: dict) -> bool:
     if host and host != add:
         return True
     return False
+
+def parse_link(input_str: str, key: bytes = None):
+    s = input_str.strip()
+    if s.startswith("nm-vless://"):
+        content, kind, used_key = decrypt_nm_payload(s[len("nm-vless://"):], explicit_key=key)
+        if kind == "uri":
+            vless_uri = content if content.startswith("vless://") else "vless://" + content
+            return {"proto": "vless", "uri": vless_uri, "key": used_key}
+        else:
+            return {"proto": "vless", "config": content, "key": used_key}
+
+    elif s.startswith("vless://"):
+        return {"proto": "vless", "uri": s, "key": None}
+
+    elif s.startswith("nm-vmess://"):
+        content, kind, used_key = decrypt_nm_payload(s[len("nm-vmess://"):], explicit_key=key)
+        if kind == "json":
+            return {"proto": "vmess", "config": content, "key": used_key}
+        else:
+            # URI format inside nm-vmess
+            return {"proto": "vmess", "config": parse_vmess_uri(content), "key": used_key}
+
+    elif s.startswith("vmess://"):
+        raw = s[len("vmess://"):]
+        if "@" in raw or "?" in raw:
+            return {"proto": "vmess", "config": parse_vmess_uri(s), "key": None}
+        else:
+            rem = len(raw) % 4
+            if rem > 0:
+                raw += "=" * (4 - rem)
+            dec = base64.b64decode(raw).decode('utf-8')
+            return {"proto": "vmess", "config": json.loads(dec), "key": None}
+
+    elif s.startswith("{") and s.endswith("}"):
+        return {"proto": "vmess", "config": json.loads(s), "key": None}
+    else:
+        raise ValueError("Unrecognized link format (supported: nm-vmess://, nm-vless://, vmess://, vless://, json).")
+
+def parse_vmess_uri(s: str) -> dict:
+    parsed = urllib.parse.urlparse(s if s.startswith("vmess://") else "vmess://" + s)
+    user_info = parsed.username or ""
+    host = parsed.hostname or ""
+    port = str(parsed.port or 443)
+    query = urllib.parse.parse_qs(parsed.query)
+    remark = urllib.parse.unquote(parsed.fragment or "")
+    return {
+        "v": "2",
+        "ps": remark,
+        "add": host,
+        "port": port,
+        "id": user_info,
+        "aid": "0",
+        "scy": query.get("security", ["auto"])[0],
+        "net": query.get("type", ["tcp"])[0],
+        "type": "none",
+        "host": query.get("host", [""])[0],
+        "path": query.get("path", [""])[0],
+        "tls": query.get("security", [""])[0] if query.get("security", [""])[0] in ["tls", "reality"] else "",
+        "sni": query.get("sni", [""])[0],
+        "fp": query.get("fp", [""])[0]
+    }
+
+def normalize_vless_uri(raw_uri: str, insecure: bool = None) -> tuple[str, dict]:
+    parsed = urllib.parse.urlsplit(raw_uri)
+    qs = urllib.parse.parse_qs(parsed.query)
+    params = {k: v[0] for k, v in qs.items()}
+    
+    # Check SNI spoofing
+    host_addr = parsed.hostname or ""
+    sni = params.get("sni", "")
+    host_header = params.get("host", "")
+    spoof = (sni and sni != host_addr) or (host_header and host_header != host_addr)
+    
+    use_insecure = insecure if insecure is not None else spoof
+    if use_insecure:
+        params["insecure"] = "1"
+        
+    # Rebuild clean query
+    query_items = [f"{k}={urllib.parse.quote(v, safe='')}" for k, v in params.items()]
+    new_query = "&".join(query_items)
+    remark_encoded = urllib.parse.quote(urllib.parse.unquote(parsed.fragment))
+    norm_link = f"vless://{parsed.netloc}?{new_query}#{remark_encoded}"
+    
+    info = {
+        "uuid": parsed.username or "",
+        "add": host_addr,
+        "port": str(parsed.port or 443),
+        "remark": urllib.parse.unquote(parsed.fragment),
+        "params": params
+    }
+    return norm_link, info
+
+def to_base64_vmess(config: dict) -> str:
+    s = json.dumps(config, separators=(',', ':'))
+    return "vmess://" + base64.b64encode(s.encode('utf-8')).decode('utf-8')
 
 def to_plain_uri(config: dict, insecure: bool = None) -> str:
     params = {}
@@ -144,44 +194,76 @@ def to_shadowrocket(config: dict, insecure: bool = None) -> str:
     }
     return f"vmess://{userinfo}?{urllib.parse.urlencode(params)}"
 
+def encrypt_nm(content: str, key: bytes = NETMOD_KEYS[0], prefix: str = "nm-vmess://") -> str:
+    enc = aes_ecb_encrypt(content.encode('utf-8'), key)
+    return prefix + base64.b64encode(enc).decode('utf-8')
+
 def main():
-    parser = argparse.ArgumentParser(description="Convert/Decrypt VMess links.")
-    parser.add_argument("input", help="VMess link (nm-vmess://, vmess://, or JSON string)")
-    parser.add_argument("--format", choices=["all", "base64", "uri", "shadowrocket", "json", "nm-vmess"], default="all", help="Output format")
-    parser.add_argument("--key", help="AES key for nm-vmess decryption/encryption (optional)")
-    parser.add_argument("--insecure", action="store_true", default=None, help="Force allowInsecure=1")
+    parser = argparse.ArgumentParser(description="Convert/Decrypt VMess and VLESS links.")
+    parser.add_argument("input", help="Link (nm-vmess://, nm-vless://, vmess://, vless://, or JSON)")
+    parser.add_argument("--format", choices=["all", "base64", "uri", "shadowrocket", "json", "nm-vmess", "nm-vless", "vless"], default="all", help="Output format")
+    parser.add_argument("--key", help="AES key for NetMod decryption/encryption (optional)")
+    parser.add_argument("--insecure", action="store_true", default=None, help="Force allowInsecure=1 / insecure=1")
     parser.add_argument("-o", "--output", help="Write result to file instead of stdout")
     args = parser.parse_args()
 
     key_bytes = args.key.encode('utf-8') if args.key else None
     try:
-        config = parse_vmess(args.input, key=key_bytes)
+        parsed_data = parse_link(args.input, key=key_bytes)
     except Exception as e:
         sys.stderr.write(f"Error parsing input: {e}\n")
         sys.exit(1)
 
+    proto = parsed_data["proto"]
     output_lines = []
-    if args.format == "all":
-        output_lines.append("=== Decrypted JSON Config ===")
-        output_lines.append(json.dumps(config, indent=2))
-        output_lines.append("\n=== Standard Base64 VMess Link (v2rayNG / V2RayN) ===")
-        output_lines.append(to_base64_vmess(config))
-        output_lines.append("\n=== Plain URI Format (URL Scheme) ===")
-        output_lines.append(to_plain_uri(config, insecure=args.insecure))
-        output_lines.append("\n=== Shadowrocket Format ===")
-        output_lines.append(to_shadowrocket(config, insecure=args.insecure))
-        output_lines.append("\n=== Re-encrypted NetMod Link (nm-vmess://) ===")
-        output_lines.append(encrypt_nm_vmess(config, key=key_bytes or NETMOD_KEYS[0]))
-    elif args.format == "base64":
-        output_lines.append(to_base64_vmess(config))
-    elif args.format == "uri":
-        output_lines.append(to_plain_uri(config, insecure=args.insecure))
-    elif args.format == "shadowrocket":
-        output_lines.append(to_shadowrocket(config, insecure=args.insecure))
-    elif args.format == "json":
-        output_lines.append(json.dumps(config, indent=2))
-    elif args.format == "nm-vmess":
-        output_lines.append(encrypt_nm_vmess(config, key=key_bytes or NETMOD_KEYS[0]))
+
+    if proto == "vless":
+        raw_uri = parsed_data.get("uri")
+        norm_vless, info = normalize_vless_uri(raw_uri, insecure=args.insecure)
+        if args.format in ["all", "vless", "uri"]:
+            if args.format == "all":
+                output_lines.append("=== Decrypted VLESS Details ===")
+                output_lines.append(f"Address:  {info['add']}")
+                output_lines.append(f"Port:     {info['port']}")
+                output_lines.append(f"UUID:     {info['uuid']}")
+                output_lines.append(f"Remark:   {info['remark']}")
+                output_lines.append(f"Params:   {json.dumps(info['params'], indent=2)}")
+                output_lines.append("\n=== Standard VLESS Link (v2rayNG / NekoBox / Xray) ===")
+                output_lines.append(norm_vless)
+                output_lines.append("\n=== Re-encrypted NetMod Link (nm-vless://) ===")
+                output_lines.append(encrypt_nm(norm_vless[len("vless://"):], key=parsed_data.get("key") or NETMOD_KEYS[0], prefix="nm-vless://"))
+            else:
+                output_lines.append(norm_vless)
+        elif args.format == "json":
+            output_lines.append(json.dumps(info, indent=2))
+        elif args.format == "nm-vless":
+            output_lines.append(encrypt_nm(norm_vless[len("vless://"):], key=parsed_data.get("key") or NETMOD_KEYS[0], prefix="nm-vless://"))
+
+    elif proto == "vmess":
+        config = parsed_data["config"]
+        if args.format == "all":
+            output_lines.append("=== Decrypted JSON Config ===")
+            output_lines.append(json.dumps(config, indent=2))
+            output_lines.append("\n=== Standard Base64 VMess Link (v2rayNG / V2RayN) ===")
+            output_lines.append(to_base64_vmess(config))
+            output_lines.append("\n=== Plain URI Format (URL Scheme) ===")
+            output_lines.append(to_plain_uri(config, insecure=args.insecure))
+            output_lines.append("\n=== Shadowrocket Format ===")
+            output_lines.append(to_shadowrocket(config, insecure=args.insecure))
+            output_lines.append("\n=== Re-encrypted NetMod Link (nm-vmess://) ===")
+            raw_json = json.dumps(config, separators=(',', ':'))
+            output_lines.append(encrypt_nm(raw_json, key=parsed_data.get("key") or NETMOD_KEYS[0], prefix="nm-vmess://"))
+        elif args.format == "base64":
+            output_lines.append(to_base64_vmess(config))
+        elif args.format == "uri":
+            output_lines.append(to_plain_uri(config, insecure=args.insecure))
+        elif args.format == "shadowrocket":
+            output_lines.append(to_shadowrocket(config, insecure=args.insecure))
+        elif args.format == "json":
+            output_lines.append(json.dumps(config, indent=2))
+        elif args.format == "nm-vmess":
+            raw_json = json.dumps(config, separators=(',', ':'))
+            output_lines.append(encrypt_nm(raw_json, key=parsed_data.get("key") or NETMOD_KEYS[0], prefix="nm-vmess://"))
 
     res = "\n".join(output_lines)
     if args.output:
